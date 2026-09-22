@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import { authRouter } from './routes/authRoutes';
 import { serverRouter } from './routes/serverRoutes';
 import { keyRouter } from './routes/keyRoutes';
+import { auditRouter } from './routes/auditRoutes';
 import { errorHandler } from './middleware/errorHandler';
 
 export function createApp(): Express {
@@ -27,6 +28,7 @@ export function createApp(): Express {
   app.use('/api/auth', authRouter);
   app.use('/api/servers', serverRouter);
   app.use('/api/keys', keyRouter);
+  app.use('/api/audit-logs', auditRouter);
 
   app.use(errorHandler);
 
