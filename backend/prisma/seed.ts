@@ -8,6 +8,7 @@ const PERMISSIONS = [
   'server:edit',
   'server:delete',
   'server:view',
+  'key:view',
   'key:upload',
   'key:download',
   'key:delete',
@@ -26,6 +27,7 @@ const ROLE_PERMISSIONS: Record<string, readonly string[]> = {
     'server:create',
     'server:edit',
     'server:delete',
+    'key:view',
     'key:upload',
     'key:download',
     'key:delete',
@@ -37,12 +39,13 @@ const ROLE_PERMISSIONS: Record<string, readonly string[]> = {
     'server:view',
     'server:create',
     'server:edit',
+    'key:view',
     'key:upload',
     'key:assign',
     'inventory:manage',
     'audit:view',
   ],
-  Viewer: ['server:view', 'inventory:view', 'audit:view'],
+  Viewer: ['server:view', 'key:view', 'inventory:view', 'audit:view'],
 };
 
 export async function seed(prisma: PrismaClient): Promise<void> {

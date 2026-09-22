@@ -24,9 +24,9 @@ describe('seed', () => {
       include: { permissions: true },
     });
 
-    expect(admin?.permissions.length).toBe(12);
-    expect(operator?.permissions.length).toBe(7);
-    expect(viewer?.permissions.length).toBe(3);
+    expect(admin?.permissions.length).toBe(13);
+    expect(operator?.permissions.length).toBe(8);
+    expect(viewer?.permissions.length).toBe(4);
   });
 
   it('creates an admin user linked to the Admin role', async () => {
