@@ -9,6 +9,7 @@ import { auditRouter } from './routes/auditRoutes';
 import { userRouter } from './routes/userRoutes';
 import { roleRouter } from './routes/roleRoutes';
 import { inventoryRouter } from './routes/inventoryRoutes';
+import { dashboardRouter } from './routes/dashboardRoutes';
 import { errorHandler } from './middleware/errorHandler';
 
 export function createApp(): Express {
@@ -35,6 +36,7 @@ export function createApp(): Express {
   app.use('/api/users', userRouter);
   app.use('/api/roles', roleRouter);
   app.use('/api/inventory', inventoryRouter);
+  app.use('/api/dashboard', dashboardRouter);
 
   app.use(errorHandler);
 
