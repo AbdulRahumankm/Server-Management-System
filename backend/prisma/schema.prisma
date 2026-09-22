@@ -1,0 +1,191 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OperatingSystem {
+  LINUX
+  WINDOWS
+  OTHER
+}
+
+enum Environment {
+  PRODUCTION
+  UAT
+  DEVELOPMENT
+  TEST
+}
+
+enum ServerStatus {
+  ACTIVE
+  INACTIVE
+  DECOMMISSIONED
+}
+
+enum FieldType {
+  TEXT
+  NUMBER
+  BOOLEAN
+  DATE
+  SELECT
+  TEXTAREA
+}
+
+enum AuthProvider {
+  LOCAL
+  OIDC
+}
+
+model User {
+  id           String       @id @default(uuid())
+  email        String       @unique
+  name         String
+  passwordHash String?
+  authProvider AuthProvider @default(LOCAL)
+  providerId   String?
+  roleId       String
+  role         Role         @relation(fields: [roleId], references: [id])
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  createdServers    Server[]          @relation("ServerCreatedBy")
+  sshKeys           SSHKey[]
+  auditLogs         AuditLog[]
+  inventoryEntities InventoryEntity[]
+  inventoryRecords  InventoryRecord[]
+
+  @@index([roleId])
+}
+
+model Role {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  description String?
+  users       User[]
+  permissions RolePermission[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  key         String           @unique
+  description String?
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model Server {
+  id            String          @id @default(uuid())
+  hostname      String          @unique
+  ipAddress     String
+  os            OperatingSystem
+  environment   Environment
+  application   String
+  owner         String
+  location      String?
+  username      String
+  sshPort       Int             @default(22)
+  description   String?
+  status        ServerStatus    @default(ACTIVE)
+  assignedKeyId String?         @unique
+  assignedKey   SSHKey?         @relation(fields: [assignedKeyId], references: [id])
+  createdById   String
+  createdBy     User            @relation("ServerCreatedBy", fields: [createdById], references: [id])
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([ipAddress])
+  @@index([environment])
+  @@index([os])
+  @@index([createdAt])
+}
+
+model SSHKey {
+  id             String    @id @default(uuid())
+  name           String    @unique
+  keyType        String
+  description    String?
+  ownerId        String
+  owner          User      @relation(fields: [ownerId], references: [id])
+  storageRef     String
+  iv             String
+  authTag        String
+  lastAccessedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  assignedServer Server?
+
+  @@index([ownerId])
+}
+
+model InventoryEntity {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  fields  InventoryField[]
+  records InventoryRecord[]
+}
+
+model InventoryField {
+  id           String          @id @default(uuid())
+  entityId     String
+  entity       InventoryEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  fieldName    String
+  fieldType    FieldType
+  required     Boolean         @default(false)
+  options      Json?
+  displayOrder Int             @default(0)
+  createdAt    DateTime        @default(now())
+
+  @@unique([entityId, fieldName])
+  @@index([entityId])
+}
+
+model InventoryRecord {
+  id          String          @id @default(uuid())
+  entityId    String
+  entity      InventoryEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  data        Json
+  createdById String
+  createdBy   User            @relation(fields: [createdById], references: [id])
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([entityId])
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id])
+  action       String
+  resourceType String
+  resourceId   String?
+  ipAddress    String?
+  userAgent    String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([action])
+}
