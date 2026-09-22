@@ -4,7 +4,7 @@
 
 **Goal:** Local email/password authentication with httpOnly-cookie JWTs (access + refresh, with transparent refresh-on-expiry), Express middleware that enforces RBAC on every protected route, and a frontend login page + route guard — this is Phase 3 of the overall system.
 
-**Architecture:** Backend follows Routes → Controllers → Services → Prisma. `passwordService`/`tokenService` are pure, unit-testable wrappers around `@node-rs/argon2`/`jsonwebtoken`; `authService` is the only place that touches Prisma for auth; `requireAuth`/`requirePermission` are composable Express middleware later routes (servers, keys, inventory, users, audit) will import as-is. Frontend gets a client-side login form and a Next.js `middleware.ts` that redirects unauthenticated users away from protected paths — a UX convenience only, since the backend independently enforces auth/permissions on every request.
+**Architecture:** Backend follows Routes → Controllers → Services → Prisma. `passwordService`/`tokenService` are pure, unit-testable wrappers around `@node-rs/argon2`/`jsonwebtoken`; `authService` is the only place that touches Prisma for auth; `requireAuth`/`requirePermission` are composable Express middleware later routes (servers, keys, inventory, users, audit) will import as-is. Frontend gets a client-side login form and a Next.js `proxy.ts` (the `middleware.ts` convention was renamed in Next 16) that redirects unauthenticated users away from protected paths — a UX convenience only, since the backend independently enforces auth/permissions on every request.
 
 **Tech Stack:** `@node-rs/argon2`, `jsonwebtoken`, `express-rate-limit`, `zod` (backend, already installed in Phase 1); `react-hook-form` + `@hookform/resolvers/zod` (frontend, already installed in Phase 1).
 
@@ -14,7 +14,7 @@
 
 - TypeScript strict mode in both apps.
 - JWTs live only in httpOnly/secure(prod)/sameSite=lax cookies, never in a JSON response body.
-- Backend is the sole source of truth for auth/permissions — the frontend's `middleware.ts` redirect is UX only.
+- Backend is the sole source of truth for auth/permissions — the frontend's `proxy.ts` redirect is UX only.
 - Rate limiting required on `/api/auth/login` (spec §19).
 - No audit logging in this plan — Phase 6 (Audit Logging) revisits this phase's endpoints to add `AuditLog` writes for login/logout, per the spec's own phase order.
 - Every new backend file follows Routes → Controllers → Services → Prisma; no Prisma calls inside a route handler or controller.
@@ -50,7 +50,7 @@ frontend/
 ├── lib/apiClient.ts                  # fetch wrapper, credentials: 'include'
 ├── app/login/page.tsx
 ├── app/dashboard/page.tsx            # stub; Phase 8 builds the real dashboard
-├── middleware.ts                     # redirect-if-unauthenticated (UX only)
+├── proxy.ts                           # redirect-if-unauthenticated (UX only)
 └── tests/login.test.tsx
 ```
 
@@ -778,12 +778,37 @@ git commit -m "feat(backend): add auth routes, rate limiting, and centralized er
 - Create: `frontend/lib/apiClient.ts`
 - Create: `frontend/app/login/page.tsx`
 - Create: `frontend/app/dashboard/page.tsx` (stub; Phase 8 replaces the body)
-- Create: `frontend/middleware.ts`
+- Create: `frontend/proxy.ts`
 - Test: `frontend/tests/login.test.tsx`
 
 **Interfaces:**
 - Consumes: `NEXT_PUBLIC_API_URL` env var (Phase 1).
 - Produces: `apiFetch(path, init)` — every later frontend data-fetching call (servers, keys, inventory, users, audit) uses this instead of raw `fetch`, so credentials/headers stay consistent in one place.
+
+- [ ] **Step 0: Add RTL cleanup between tests**
+
+Phase 1's `vitest.config.ts` had `setupFiles: []`, which was fine for a single-test-file scaffold but breaks as soon as more than one test in a file (or file re-render) leaves DOM nodes behind — Vitest, unlike Jest, doesn't auto-run Testing Library's `cleanup()` between tests. Without this, Task 7's queries below fail with "Found multiple elements" once the login form is rendered more than once. Fix it globally:
+
+Create `frontend/vitest.setup.ts`:
+
+```ts
+import { afterEach } from 'vitest';
+import { cleanup } from '@testing-library/react';
+import '@testing-library/jest-dom/vitest';
+
+afterEach(() => {
+  cleanup();
+});
+```
+
+Update `frontend/vitest.config.ts`'s `test` block:
+
+```ts
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./vitest.setup.ts'],
+  },
+```
 
 - [ ] **Step 1: Create `frontend/lib/apiClient.ts`**
 
@@ -822,7 +847,7 @@ describe('LoginPage', () => {
 
   it('shows a validation error when submitted empty', async () => {
     render(<LoginPage />);
-    fireEvent.click(screen.getByText('Sign in'));
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
     expect(await screen.findByText('Enter a valid email address')).toBeDefined();
   });
 
@@ -839,7 +864,7 @@ describe('LoginPage', () => {
     fireEvent.change(screen.getByPlaceholderText('Password'), {
       target: { value: 'ChangeMe123!' },
     });
-    fireEvent.click(screen.getByText('Sign in'));
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
 
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/dashboard'));
   });
@@ -855,7 +880,7 @@ describe('LoginPage', () => {
       target: { value: 'admin@example.com' },
     });
     fireEvent.change(screen.getByPlaceholderText('Password'), { target: { value: 'wrong' } });
-    fireEvent.click(screen.getByText('Sign in'));
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
 
     expect(await screen.findByText('Invalid email or password')).toBeDefined();
   });
@@ -961,14 +986,16 @@ export default function DashboardPage() {
 }
 ```
 
-- [ ] **Step 7: Create `frontend/middleware.ts`**
+- [ ] **Step 7: Create `frontend/proxy.ts`**
+
+Next.js renamed the `middleware.ts` file convention to `proxy.ts` as of Next 16 (same exports, same behavior, just a rename to reflect that it can run on more than just edge middleware use cases) — `npx @next/codemod@canary middleware-to-proxy .` does this rename plus the `middleware` → `proxy` function rename automatically for any file matching the old convention, if you're following this plan against an older Next version that still uses `middleware.ts`/`export function middleware`.
 
 ```ts
 import { NextRequest, NextResponse } from 'next/server';
 
 const PROTECTED_PATHS = ['/dashboard'];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const isProtected = PROTECTED_PATHS.some((path) => request.nextUrl.pathname.startsWith(path));
   if (!isProtected) {
     return NextResponse.next();
@@ -986,15 +1013,52 @@ export const config = {
 };
 ```
 
+- [ ] **Step 7b: Set up standalone ESLint (Next 16 removed `next lint`)**
+
+Phase 1's `frontend/package.json` had `"lint": "next lint"`, which worked on Next 14 but Next 16 no longer ships that command at all (`next lint` errors out). Set up plain ESLint, matching the backend's `.eslintrc.cjs` pattern:
+
+Run (from `frontend/`): `npm install --save-dev eslint@^8.57.0 eslint-plugin-react@^7.35.0 eslint-plugin-react-hooks@^4.6.2 @typescript-eslint/parser@^7.16.1 @typescript-eslint/eslint-plugin@^7.16.1`
+
+Update the `lint` script in `frontend/package.json`:
+
+```json
+    "lint": "eslint app components lib tests middleware.ts --ext .ts,.tsx",
+```
+
+(If you're following this plan on a Next version new enough to already use `proxy.ts` from Step 7 above, lint that file instead: `eslint app components lib tests proxy.ts --ext .ts,.tsx`.)
+
+Create `frontend/.eslintrc.cjs`:
+
+```js
+module.exports = {
+  root: true,
+  parser: '@typescript-eslint/parser',
+  parserOptions: { ecmaVersion: 2022, sourceType: 'module', ecmaFeatures: { jsx: true } },
+  plugins: ['@typescript-eslint', 'react', 'react-hooks'],
+  extends: [
+    'eslint:recommended',
+    'plugin:@typescript-eslint/recommended',
+    'plugin:react/recommended',
+    'plugin:react-hooks/recommended',
+  ],
+  settings: { react: { version: 'detect' } },
+  env: { browser: true, es2022: true, node: true },
+  rules: {
+    'react/react-in-jsx-scope': 'off',
+    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+  },
+};
+```
+
 - [ ] **Step 8: Run full frontend suite, lint, typecheck, build**
 
 Run (from `frontend/`): `npm test && npm run lint && npx tsc --noEmit && npm run build`
-Expected: all pass/exit 0
+Expected: all pass/exit 0. The build log will include a one-time `⚠ The "middleware" file convention is deprecated` warning if you're still on `middleware.ts` (older Next) — that's expected until you run the codemod mentioned in Step 7.
 
 - [ ] **Step 9: Commit**
 
 ```bash
-git add frontend/lib/apiClient.ts frontend/app/login frontend/app/dashboard frontend/middleware.ts frontend/tests/login.test.tsx
+git add frontend/lib/apiClient.ts frontend/app/login frontend/app/dashboard frontend/proxy.ts frontend/tests/login.test.tsx
 git commit -m "feat(frontend): add login page, route guard, and API client"
 ```
 
