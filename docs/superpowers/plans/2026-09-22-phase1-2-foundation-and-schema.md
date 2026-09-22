@@ -716,7 +716,7 @@ git commit -m "feat(db): add seed script for roles, permissions, and admin user"
     "test": "vitest run"
   },
   "dependencies": {
-    "next": "^14.2.5",
+    "next": "^16.3.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "clsx": "^2.1.1",
