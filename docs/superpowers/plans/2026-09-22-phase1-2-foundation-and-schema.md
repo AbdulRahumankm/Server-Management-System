@@ -107,7 +107,7 @@ frontend/Dockerfile
     "helmet": "^7.1.0",
     "cookie-parser": "^1.4.6",
     "zod": "^3.23.8",
-    "argon2": "^0.31.2",
+    "@node-rs/argon2": "^1.8.3",
     "jsonwebtoken": "^9.0.2",
     "express-rate-limit": "^7.4.0",
     "@prisma/client": "^5.19.1"
@@ -565,7 +565,7 @@ Expected: FAIL — `Cannot find module '../prisma/seed'`
 
 ```ts
 import { PrismaClient } from '@prisma/client';
-import argon2 from 'argon2';
+import { hash } from '@node-rs/argon2';
 
 const PERMISSIONS = [
   'user:manage',
@@ -646,7 +646,7 @@ export async function seed(prisma: PrismaClient): Promise<void> {
     create: {
       email: adminEmail,
       name: 'Initial Admin',
-      passwordHash: await argon2.hash(adminPassword),
+      passwordHash: await hash(adminPassword),
       roleId: adminRole.id,
     },
   });
