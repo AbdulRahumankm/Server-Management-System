@@ -1,0 +1,97 @@
+'use client';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import type { FieldType } from '@/types/inventory';
+
+export interface FieldDraft {
+  fieldName: string;
+  fieldType: FieldType;
+  required: boolean;
+  options: string; // comma-separated, used only when fieldType === 'SELECT'
+}
+
+const FIELD_TYPES: FieldType[] = ['TEXT', 'NUMBER', 'BOOLEAN', 'DATE', 'SELECT', 'TEXTAREA'];
+
+interface EntityFieldBuilderProps {
+  fields: FieldDraft[];
+  onChange: (fields: FieldDraft[]) => void;
+}
+
+export function EntityFieldBuilder({ fields, onChange }: EntityFieldBuilderProps) {
+  function addField() {
+    onChange([...fields, { fieldName: '', fieldType: 'TEXT', required: false, options: '' }]);
+  }
+
+  function updateField(index: number, patch: Partial<FieldDraft>) {
+    onChange(fields.map((f, i) => (i === index ? { ...f, ...patch } : f)));
+  }
+
+  function removeField(index: number) {
+    onChange(fields.filter((_, i) => i !== index));
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {fields.map((field, index) => (
+        <div
+          key={index}
+          className="flex flex-wrap items-end gap-2 rounded-md border border-slate-200 p-2"
+        >
+          <div>
+            <Label htmlFor={`field-name-${index}`}>Field Name</Label>
+            <Input
+              id={`field-name-${index}`}
+              value={field.fieldName}
+              onChange={(e) => updateField(index, { fieldName: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label htmlFor={`field-type-${index}`}>Type</Label>
+            <select
+              id={`field-type-${index}`}
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+              value={field.fieldType}
+              onChange={(e) => updateField(index, { fieldType: e.target.value as FieldType })}
+            >
+              {FIELD_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </div>
+          {field.fieldType === 'SELECT' && (
+            <div>
+              <Label htmlFor={`field-options-${index}`}>Options (comma-separated)</Label>
+              <Input
+                id={`field-options-${index}`}
+                value={field.options}
+                onChange={(e) => updateField(index, { options: e.target.value })}
+              />
+            </div>
+          )}
+          <label className="flex items-center gap-1 text-sm">
+            <input
+              type="checkbox"
+              checked={field.required}
+              onChange={(e) => updateField(index, { required: e.target.checked })}
+            />
+            Required
+          </label>
+          <button
+            type="button"
+            className="text-sm text-red-600 underline"
+            onClick={() => removeField(index)}
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+      <Button type="button" variant="outline" onClick={addField}>
+        Add Field
+      </Button>
+    </div>
+  );
+}
