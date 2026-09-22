@@ -9,3 +9,5 @@ backend/prisma/dev.db
 key-storage/
 .certs/
 .claude/
+backend/certs/extra-ca.pem
+frontend/certs/extra-ca.pem
