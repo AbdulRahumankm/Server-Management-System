@@ -760,6 +760,20 @@ describe('keys', () => {
 });
 ```
 
+- [ ] **Step 7b: Serialize Jest test-file execution**
+
+`tests/keys.test.ts` and `tests/servers.test.ts` (Phase 4) both upsert and later delete the same fixture rows (`operator@example.com`, `viewer@example.com`) against one real, shared Postgres. Jest runs test *files* in parallel worker processes by default, so one file's `afterAll` can delete rows the other file's still-running tests depend on -- this surfaces as flaky, unrelated-looking 401s. Fix it once, for every future integration test file, by forcing serial execution. Modify `backend/jest.config.js`:
+
+```js
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  roots: ['<rootDir>/tests'],
+  setupFiles: ['<rootDir>/jest.setup.js'],
+  maxWorkers: 1,
+};
+```
+
 - [ ] **Step 8: Provide a real Postgres, migrate, run the full backend suite**
 
 ```bash
