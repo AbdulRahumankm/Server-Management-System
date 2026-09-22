@@ -1045,10 +1045,13 @@ module.exports = {
   env: { browser: true, es2022: true, node: true },
   rules: {
     'react/react-in-jsx-scope': 'off',
+    'react/prop-types': 'off',
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
   },
 };
 ```
+
+`react/prop-types` is off because it doesn't understand TypeScript-typed props (it looks for runtime `PropTypes` declarations) and false-positives on every destructured-props component — TS already enforces prop shapes at compile time, which is strictly stronger.
 
 - [ ] **Step 8: Run full frontend suite, lint, typecheck, build**
 
