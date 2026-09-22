@@ -191,6 +191,29 @@ describe('tokenService', () => {
 Run: `npx jest tests/tokenService.test.ts`
 Expected: FAIL — module not found
 
+- [ ] **Step 2b: Make Jest load `backend/.env`**
+
+Jest doesn't read `.env` automatically the way Prisma's CLI does, so `JWT_SECRET`/`JWT_REFRESH_SECRET` are `undefined` in tests without this. Node's built-in `process.loadEnvFile()` does *not* reliably propagate into Jest's per-test-file environment (verified: it silently no-ops there) — use the standard `dotenv` package instead:
+
+Run (from `backend/`): `npm install --save-dev dotenv`
+
+Create `backend/jest.setup.js`:
+
+```js
+require('dotenv').config({ quiet: true });
+```
+
+Add it to `backend/jest.config.js`:
+
+```js
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  roots: ['<rootDir>/tests'],
+  setupFiles: ['<rootDir>/jest.setup.js'],
+};
+```
+
 - [ ] **Step 3: Implement**
 
 ```ts
