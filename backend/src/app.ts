@@ -2,6 +2,8 @@ import express, { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import { authRouter } from './routes/authRoutes';
+import { errorHandler } from './middleware/errorHandler';
 
 export function createApp(): Express {
   const app = express();
@@ -19,6 +21,10 @@ export function createApp(): Express {
   app.get('/api/health', (_req, res) => {
     res.status(200).json({ status: 'ok' });
   });
+
+  app.use('/api/auth', authRouter);
+
+  app.use(errorHandler);
 
   return app;
 }
