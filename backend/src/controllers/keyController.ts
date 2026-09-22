@@ -4,12 +4,14 @@ import {
   listKeys,
   getKeyMetadata,
   uploadKey,
-  downloadKey,
+  getKeyForDownload,
+  decryptAndRecordAccess,
   deleteKey,
   assignKeyToServer,
   KeyNotFoundError,
   DuplicateKeyNameError,
 } from '../services/keyService';
+import { logAudit, AUDIT_ACTIONS, requestContext } from '../services/auditService';
 
 const PRIVATE_KEY_MARKER = '-----BEGIN';
 
@@ -50,6 +52,14 @@ export async function uploadKeyHandler(req: Request, res: Response): Promise<voi
       ownerId: req.user!.id,
       fileBuffer: req.file.buffer,
     });
+    await logAudit({
+      userId: req.user!.id,
+      action: AUDIT_ACTIONS.KEY_UPLOADED,
+      resourceType: 'SSHKey',
+      resourceId: key.id,
+      metadata: { keyName: key.name, keyType: key.keyType },
+      ...requestContext(req),
+    });
     res.status(201).json(key);
   } catch (err) {
     if (err instanceof DuplicateKeyNameError) {
@@ -62,9 +72,18 @@ export async function uploadKeyHandler(req: Request, res: Response): Promise<voi
 
 export async function downloadKeyHandler(req: Request, res: Response): Promise<void> {
   try {
-    const { filename, content } = await downloadKey(req.params.id);
+    const key = await getKeyForDownload(req.params.id);
+    await logAudit({
+      userId: req.user!.id,
+      action: AUDIT_ACTIONS.KEY_DOWNLOADED,
+      resourceType: 'SSHKey',
+      resourceId: key.id,
+      metadata: { keyName: key.name },
+      ...requestContext(req),
+    });
+    const content = await decryptAndRecordAccess(key);
     res.setHeader('Content-Type', 'application/octet-stream');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${key.name}"`);
     res.status(200).send(content);
   } catch (err) {
     if (err instanceof KeyNotFoundError) {
@@ -77,7 +96,15 @@ export async function downloadKeyHandler(req: Request, res: Response): Promise<v
 
 export async function deleteKeyHandler(req: Request, res: Response): Promise<void> {
   try {
-    await deleteKey(req.params.id);
+    const key = await deleteKey(req.params.id);
+    await logAudit({
+      userId: req.user!.id,
+      action: AUDIT_ACTIONS.KEY_DELETED,
+      resourceType: 'SSHKey',
+      resourceId: key.id,
+      metadata: { keyName: key.name },
+      ...requestContext(req),
+    });
     res.status(204).send();
   } catch (err) {
     if (err instanceof KeyNotFoundError) {
@@ -95,7 +122,16 @@ export async function assignKeyHandler(req: Request, res: Response): Promise<voi
     return;
   }
   try {
-    res.status(200).json(await assignKeyToServer(req.params.id, parsed.data.serverId));
+    const server = await assignKeyToServer(req.params.id, parsed.data.serverId);
+    await logAudit({
+      userId: req.user!.id,
+      action: AUDIT_ACTIONS.KEY_ASSIGNED,
+      resourceType: 'SSHKey',
+      resourceId: req.params.id,
+      metadata: { serverId: server.id, hostname: server.hostname },
+      ...requestContext(req),
+    });
+    res.status(200).json(server);
   } catch (err) {
     if (err instanceof KeyNotFoundError) {
       res.status(404).json({ error: 'Key not found' });

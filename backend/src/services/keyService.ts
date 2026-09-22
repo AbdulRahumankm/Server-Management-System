@@ -64,19 +64,29 @@ export async function uploadKey(input: {
   }
 }
 
-export async function downloadKey(id: string): Promise<{ filename: string; content: Buffer }> {
+export async function getKeyForDownload(id: string) {
   const key = await prisma.sSHKey.findUnique({ where: { id } });
   if (!key) throw new KeyNotFoundError();
-  const content = await storage.get(key.storageRef, key.iv, key.authTag);
-  await prisma.sSHKey.update({ where: { id }, data: { lastAccessedAt: new Date() } });
-  return { filename: key.name, content };
+  return key;
 }
 
-export async function deleteKey(id: string): Promise<void> {
+export async function decryptAndRecordAccess(key: {
+  id: string;
+  storageRef: string;
+  iv: string;
+  authTag: string;
+}): Promise<Buffer> {
+  const content = await storage.get(key.storageRef, key.iv, key.authTag);
+  await prisma.sSHKey.update({ where: { id: key.id }, data: { lastAccessedAt: new Date() } });
+  return content;
+}
+
+export async function deleteKey(id: string) {
   const key = await prisma.sSHKey.findUnique({ where: { id } });
   if (!key) throw new KeyNotFoundError();
   await prisma.sSHKey.delete({ where: { id } });
   await storage.delete(key.storageRef).catch(() => undefined);
+  return key;
 }
 
 export async function assignKeyToServer(keyId: string, serverId: string) {
