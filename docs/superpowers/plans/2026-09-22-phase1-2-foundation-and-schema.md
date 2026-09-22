@@ -73,6 +73,7 @@ frontend/Dockerfile
 **Files:**
 - Create: `backend/package.json`
 - Create: `backend/tsconfig.json`
+- Create: `backend/tsconfig.build.json`
 - Create: `backend/.eslintrc.cjs`
 - Create: `backend/.prettierrc`
 - Create: `backend/jest.config.js`
@@ -93,7 +94,7 @@ frontend/Dockerfile
   "private": true,
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
     "start": "node dist/index.js",
     "lint": "eslint src tests --ext .ts",
     "test": "jest",
@@ -155,6 +156,21 @@ frontend/Dockerfile
   },
   "include": ["src", "tests", "prisma"],
   "exclude": ["node_modules", "dist"]
+}
+```
+
+- [ ] **Step 2b: Create `backend/tsconfig.build.json`**
+
+`tsconfig.json`'s `rootDir` is `.` (so `tsc --noEmit` can typecheck `tests/` and `prisma/` alongside `src/`), which means compiling with it directly mirrors that folder structure into `dist/` (e.g. `dist/src/index.js`), breaking the `node dist/index.js` entrypoint the Dockerfile and `npm start` expect. This narrower config is used only for the production build:
+
+```json
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "include": ["src"]
 }
 ```
 
@@ -978,24 +994,33 @@ git commit -m "feat(frontend): scaffold Next.js+Tailwind app with base button co
 - Create: `docker-compose.yml`
 - Create: `backend/Dockerfile`
 - Create: `frontend/Dockerfile`
+- Create: `backend/certs/.gitkeep`, `frontend/certs/.gitkeep` (placeholders so the `certs/` dir always exists as a Docker build-context input, even with no real cert file)
+- Create: `frontend/public/.gitkeep` (Next.js's standalone-ish Dockerfile COPY needs `public/` to exist)
 - Create: `.env.example`
-- Create: `.gitignore`
+- Update: `.gitignore` (already created ahead of schedule during Task 1 for hygiene; add `backend/certs/extra-ca.pem` and `frontend/certs/extra-ca.pem`)
+
+**A note on this network's TLS inspection:** if you're on a network that runs TLS-inspecting middleboxes (Fortinet/Netskope-style corporate proxies), `apk add`, `npm install`'s prebuilt-binary fetches (Prisma engines), and Node's own HTTPS calls inside the Docker build will all fail with `self-signed certificate in certificate chain`, because the container's default trust store doesn't include that proxy's CA. Export your proxy's root CA(s) from the OS trust store to a PEM file, drop it at `backend/certs/extra-ca.pem` and `frontend/certs/extra-ca.pem` (gitignored — it's a local/network-specific artifact, not something to commit), and the Dockerfiles below pick it up automatically; on a network without TLS inspection, just leave those files absent and the `touch` step below makes them empty, which is a no-op.
 
 **Interfaces:**
 - Consumes: `createApp`/`index.ts` (Task 1), `schema.prisma` (Task 2), frontend build (Task 4).
 - Produces: the `postgres`/`backend`/`frontend` service names and `DATABASE_URL`/`ENCRYPTION_KEY`/`JWT_SECRET`/`JWT_REFRESH_SECRET`/`KEY_STORAGE_PATH` env var names other phases assume exist.
 
-- [ ] **Step 1: Create `.gitignore`**
+- [ ] **Step 1: Update `.gitignore`**
+
+If Task 1 already created it (recommended — commit it before any `node_modules/` can land in git), just add the two new lines below to the existing file instead of overwriting it:
 
 ```
 node_modules/
 dist/
 .next/
 *.log
+*.tsbuildinfo
 .env
 .env.local
 backend/prisma/dev.db
 key-storage/
+backend/certs/extra-ca.pem
+frontend/certs/extra-ca.pem
 ```
 
 - [ ] **Step 2: Create `.env.example`**
@@ -1021,11 +1046,20 @@ ADMIN_INITIAL_PASSWORD=ChangeMe123!
 NEXT_PUBLIC_API_URL=http://localhost:4000
 ```
 
-- [ ] **Step 3: Create `backend/Dockerfile`**
+- [ ] **Step 3: Create placeholder dirs and `backend/Dockerfile`**
+
+```bash
+mkdir -p backend/certs && touch backend/certs/.gitkeep
+```
 
 ```dockerfile
 FROM node:20-alpine AS base
 WORKDIR /app
+COPY certs/ ./certs/
+RUN touch ./certs/extra-ca.pem \
+    && cat ./certs/extra-ca.pem >> /etc/ssl/certs/ca-certificates.crt
+ENV NODE_EXTRA_CA_CERTS=/app/certs/extra-ca.pem
+RUN apk add --no-cache openssl
 COPY package*.json ./
 RUN npm install
 COPY . .
@@ -1034,6 +1068,10 @@ RUN npm run build
 
 FROM node:20-alpine
 WORKDIR /app
+COPY --from=base /app/certs ./certs
+RUN cat ./certs/extra-ca.pem >> /etc/ssl/certs/ca-certificates.crt
+ENV NODE_EXTRA_CA_CERTS=/app/certs/extra-ca.pem
+RUN apk add --no-cache openssl
 ENV NODE_ENV=production
 COPY --from=base /app/dist ./dist
 COPY --from=base /app/node_modules ./node_modules
@@ -1043,11 +1081,20 @@ EXPOSE 4000
 CMD ["node", "dist/index.js"]
 ```
 
-- [ ] **Step 4: Create `frontend/Dockerfile`**
+`RUN apk add --no-cache openssl` is required in both stages: `node:20-alpine` ships without OpenSSL, and without it Prisma can't detect the correct engine binary target (it logs "Prisma failed to detect the libssl/openssl version") and falls back to a network checksum check that fails the same way `npm install` would without the CA trust above. The `cat ... >> ca-certificates.crt` line makes `apk` itself (which doesn't read `NODE_EXTRA_CA_CERTS`) trust the same proxy CA.
+
+- [ ] **Step 4: Create placeholder dirs and `frontend/Dockerfile`**
+
+```bash
+mkdir -p frontend/certs frontend/public && touch frontend/certs/.gitkeep frontend/public/.gitkeep
+```
 
 ```dockerfile
 FROM node:20-alpine AS base
 WORKDIR /app
+COPY certs/ ./certs/
+RUN touch ./certs/extra-ca.pem
+ENV NODE_EXTRA_CA_CERTS=/app/certs/extra-ca.pem
 COPY package*.json ./
 RUN npm install
 COPY . .
@@ -1063,6 +1110,8 @@ COPY --from=base /app/public ./public
 EXPOSE 3000
 CMD ["npm", "start"]
 ```
+
+`frontend/public/.gitkeep` exists purely so `COPY --from=base /app/public ./public` has a directory to copy — Docker's `COPY` fails outright on a missing source path.
 
 - [ ] **Step 5: Create `docker-compose.yml`**
 
