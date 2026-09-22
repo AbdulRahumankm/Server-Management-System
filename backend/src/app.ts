@@ -6,6 +6,8 @@ import { authRouter } from './routes/authRoutes';
 import { serverRouter } from './routes/serverRoutes';
 import { keyRouter } from './routes/keyRoutes';
 import { auditRouter } from './routes/auditRoutes';
+import { userRouter } from './routes/userRoutes';
+import { roleRouter } from './routes/roleRoutes';
 import { errorHandler } from './middleware/errorHandler';
 
 export function createApp(): Express {
@@ -29,6 +31,8 @@ export function createApp(): Express {
   app.use('/api/servers', serverRouter);
   app.use('/api/keys', keyRouter);
   app.use('/api/audit-logs', auditRouter);
+  app.use('/api/users', userRouter);
+  app.use('/api/roles', roleRouter);
 
   app.use(errorHandler);
 
