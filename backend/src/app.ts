@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { authRouter } from './routes/authRoutes';
+import { serverRouter } from './routes/serverRoutes';
 import { errorHandler } from './middleware/errorHandler';
 
 export function createApp(): Express {
@@ -23,6 +24,7 @@ export function createApp(): Express {
   });
 
   app.use('/api/auth', authRouter);
+  app.use('/api/servers', serverRouter);
 
   app.use(errorHandler);
 
