@@ -111,17 +111,30 @@ git commit -m "test(frontend): cover EntityFieldBuilder add/remove/type-change i
 **Files:**
 - Test: `frontend/tests/keys-upload.test.tsx`
 
-- [ ] **Step 1: Write the test**
+`UploadKeyPage`'s inputs use the native HTML `required` attribute (unlike the RHF-driven forms elsewhere, e.g. `ServerForm`, `LoginPage`, which validate purely in JS via `zodResolver` and never set `required` on the underlying `<input>`). jsdom implements real constraint validation, so a plain `fireEvent.click` on the submit button gets silently blocked before `onSubmit` ever runs whenever a required field isn't recognized as filled — this bit both `fireEvent.change` on the file input (files not properly registered) and, even after switching to `@testing-library/user-event`'s `upload()`, the click-triggered native validation gate itself. The fix is to dispatch the `submit` event directly on the `<form>`, bypassing that native click→validate→submit pipeline entirely — the standard testing-library pattern for testing a submit handler's logic in isolation from browser-native validation UI.
+
+- [ ] **Step 1: Install `@testing-library/user-event`**
+
+Run (from `frontend/`): `npm install --save-dev @testing-library/user-event`
+
+- [ ] **Step 2: Write the test**
 
 ```tsx
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import UploadKeyPage from '../app/keys/upload/page';
 
 const pushMock = vi.fn();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: pushMock }),
 }));
+
+function submitForm(container: HTMLElement) {
+  const form = container.querySelector('form');
+  if (!form) throw new Error('form not found');
+  fireEvent.submit(form);
+}
 
 describe('UploadKeyPage', () => {
   beforeEach(() => {
@@ -135,14 +148,15 @@ describe('UploadKeyPage', () => {
       json: async () => ({}),
     });
 
-    render(<UploadKeyPage />);
+    const user = userEvent.setup();
+    const { container } = render(<UploadKeyPage />);
 
-    fireEvent.change(screen.getByLabelText('Key Name'), { target: { value: 'ci-key' } });
+    await user.type(screen.getByLabelText('Key Name'), 'ci-key');
     const file = new File(['-----BEGIN OPENSSH PRIVATE KEY-----'], 'id_ed25519', {
       type: 'text/plain',
     });
-    fireEvent.change(screen.getByLabelText('Private Key File'), { target: { files: [file] } });
-    fireEvent.click(screen.getByRole('button', { name: 'Upload Key' }));
+    await user.upload(screen.getByLabelText('Private Key File'), file);
+    submitForm(container);
 
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/keys'));
 
@@ -156,11 +170,12 @@ describe('UploadKeyPage', () => {
       json: async () => ({ error: 'File does not look like a PEM-encoded private key' }),
     });
 
-    render(<UploadKeyPage />);
-    fireEvent.change(screen.getByLabelText('Key Name'), { target: { value: 'bad-key' } });
+    const user = userEvent.setup();
+    const { container } = render(<UploadKeyPage />);
+    await user.type(screen.getByLabelText('Key Name'), 'bad-key');
     const file = new File(['not a key'], 'bad.txt');
-    fireEvent.change(screen.getByLabelText('Private Key File'), { target: { files: [file] } });
-    fireEvent.click(screen.getByRole('button', { name: 'Upload Key' }));
+    await user.upload(screen.getByLabelText('Private Key File'), file);
+    submitForm(container);
 
     await waitFor(() => expect(fetch).toHaveBeenCalled());
     expect(pushMock).not.toHaveBeenCalled();
@@ -168,15 +183,15 @@ describe('UploadKeyPage', () => {
 });
 ```
 
-- [ ] **Step 2: Run it**
+- [ ] **Step 3: Run it**
 
 Run (from `frontend/`): `npx vitest run tests/keys-upload.test.tsx`
 Expected: PASS — 2 passed
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add frontend/tests/keys-upload.test.tsx
+git add frontend/tests/keys-upload.test.tsx frontend/package.json frontend/package-lock.json
 git commit -m "test(frontend): cover key upload page's multipart submit and failure path"
 ```
 
