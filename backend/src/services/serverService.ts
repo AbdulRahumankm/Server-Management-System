@@ -73,9 +73,9 @@ export async function updateServer(id: string, input: UpdateServerInput) {
   }
 }
 
-export async function deleteServer(id: string): Promise<void> {
+export async function deleteServer(id: string) {
   try {
-    await prisma.server.delete({ where: { id } });
+    return await prisma.server.delete({ where: { id } });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
       throw new ServerNotFoundError();

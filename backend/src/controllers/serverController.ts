@@ -13,6 +13,7 @@ import {
   ServerNotFoundError,
   DuplicateHostnameError,
 } from '../services/serverService';
+import { logAudit, AUDIT_ACTIONS, requestContext } from '../services/auditService';
 
 export async function listServersHandler(req: Request, res: Response): Promise<void> {
   const parsed = listServersQuerySchema.safeParse(req.query);
@@ -39,7 +40,16 @@ export async function createServerHandler(req: Request, res: Response): Promise<
     return;
   }
   try {
-    res.status(201).json(await createServer(parsed.data, req.user!.id));
+    const server = await createServer(parsed.data, req.user!.id);
+    await logAudit({
+      userId: req.user!.id,
+      action: AUDIT_ACTIONS.SERVER_CREATED,
+      resourceType: 'Server',
+      resourceId: server.id,
+      metadata: { hostname: server.hostname },
+      ...requestContext(req),
+    });
+    res.status(201).json(server);
   } catch (err) {
     if (err instanceof DuplicateHostnameError) {
       res.status(409).json({ error: 'A server with this hostname already exists' });
@@ -56,7 +66,16 @@ export async function updateServerHandler(req: Request, res: Response): Promise<
     return;
   }
   try {
-    res.status(200).json(await updateServer(req.params.id, parsed.data));
+    const server = await updateServer(req.params.id, parsed.data);
+    await logAudit({
+      userId: req.user!.id,
+      action: AUDIT_ACTIONS.SERVER_UPDATED,
+      resourceType: 'Server',
+      resourceId: server.id,
+      metadata: { hostname: server.hostname },
+      ...requestContext(req),
+    });
+    res.status(200).json(server);
   } catch (err) {
     if (err instanceof ServerNotFoundError) {
       res.status(404).json({ error: 'Server not found' });
@@ -72,7 +91,15 @@ export async function updateServerHandler(req: Request, res: Response): Promise<
 
 export async function deleteServerHandler(req: Request, res: Response): Promise<void> {
   try {
-    await deleteServer(req.params.id);
+    const server = await deleteServer(req.params.id);
+    await logAudit({
+      userId: req.user!.id,
+      action: AUDIT_ACTIONS.SERVER_DELETED,
+      resourceType: 'Server',
+      resourceId: server.id,
+      metadata: { hostname: server.hostname },
+      ...requestContext(req),
+    });
     res.status(204).send();
   } catch (err) {
     if (err instanceof ServerNotFoundError) {
