@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.next/
+*.log
+.env
+.env.local
+backend/prisma/dev.db
+key-storage/
+.certs/
