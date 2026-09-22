@@ -22,6 +22,7 @@ const ROLE_PERMISSIONS: Record<string, readonly string[]> = {
   Admin: [
     'user:manage',
     'role:manage',
+    'server:view',
     'server:create',
     'server:edit',
     'server:delete',

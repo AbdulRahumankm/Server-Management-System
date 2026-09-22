@@ -24,7 +24,7 @@ describe('seed', () => {
       include: { permissions: true },
     });
 
-    expect(admin?.permissions.length).toBe(11);
+    expect(admin?.permissions.length).toBe(12);
     expect(operator?.permissions.length).toBe(7);
     expect(viewer?.permissions.length).toBe(3);
   });
