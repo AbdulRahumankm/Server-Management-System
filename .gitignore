@@ -12,3 +12,4 @@ key-storage/
 backend/certs/extra-ca.pem
 frontend/certs/extra-ca.pem
 */tests/
+.claude/
