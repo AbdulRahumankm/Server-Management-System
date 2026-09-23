@@ -54,6 +54,7 @@ export function EntityFieldBuilder({ fields, onChange }: EntityFieldBuilderProps
 
   return (
     <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {fields.map((field, index) => (
         <div
           key={index}
@@ -109,7 +110,8 @@ export function EntityFieldBuilder({ fields, onChange }: EntityFieldBuilderProps
           </button>
         </div>
       ))}
-      <Button type="button" variant="outline" onClick={addField}>
+      </div>
+      <Button type="button" variant="outline" onClick={addField} className="self-start">
         Add Field
       </Button>
     </div>

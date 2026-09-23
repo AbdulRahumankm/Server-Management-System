@@ -65,9 +65,13 @@ export function DynamicRecordForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {fields.map((field) => (
-        <div key={field.id}>
+        <div
+          key={field.id}
+          className={field.fieldType === 'TEXTAREA' || field.fieldType === 'SSH_KEY' ? 'sm:col-span-2' : undefined}
+        >
           <Label htmlFor={field.fieldName}>
             {field.fieldName}
             {field.required ? ' *' : ''}
@@ -148,6 +152,7 @@ export function DynamicRecordForm({
           )}
         </div>
       ))}
+      </div>
       <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? 'Saving...' : submitLabel}
       </Button>

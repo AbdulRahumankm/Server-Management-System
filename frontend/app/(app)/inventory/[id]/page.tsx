@@ -1,7 +1,9 @@
 'use client';
 
 import { use, useState } from 'react';
+import Link from 'next/link';
 import * as XLSX from 'xlsx';
+import { ArrowLeft } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -22,7 +24,12 @@ import { ImportRecordsDialog } from '@/components/inventory/ImportRecordsDialog'
 import { RecordCredentialDialog } from '@/components/inventory/RecordCredentialDialog';
 import { apiFetch } from '@/lib/apiClient';
 import { useCurrentUser } from '@/lib/useCurrentUser';
-import type { InventoryEntity, InventoryField, PaginatedInventoryRecords } from '@/types/inventory';
+import type {
+  InventoryEntity,
+  InventoryField,
+  InventoryRecord,
+  PaginatedInventoryRecords,
+} from '@/types/inventory';
 
 function RecordCell({
   field,
@@ -47,6 +54,7 @@ function RecordCell({
 export default function InventoryEntityPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [addOpen, setAddOpen] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<InventoryRecord | null>(null);
   const queryClient = useQueryClient();
   const { data: currentUser } = useCurrentUser();
   const canReveal = (currentUser?.permissions ?? []).includes('inventory:credential:reveal');
@@ -106,6 +114,31 @@ export default function InventoryEntityPage({ params }: { params: Promise<{ id: 
     queryClient.invalidateQueries({ queryKey: ['inventory-records', id] });
   }
 
+  async function handleEditRecord(data: Record<string, unknown>, credentialFiles: Record<string, File>) {
+    if (!editingRecord) return;
+    let body: BodyInit;
+    if (Object.keys(credentialFiles).length > 0) {
+      const formData = new FormData();
+      formData.set('data', JSON.stringify(data));
+      for (const [fieldName, file] of Object.entries(credentialFiles)) {
+        formData.set(fieldName, file);
+      }
+      body = formData;
+    } else {
+      body = JSON.stringify({ data });
+    }
+
+    const res = await apiFetch(`/api/inventory/records/${editingRecord.id}`, { method: 'PUT', body });
+    if (!res.ok) {
+      const errorBody = await res.json().catch(() => ({}));
+      toast.error(errorBody.error ?? 'Failed to update record');
+      return;
+    }
+    toast.success('Record updated');
+    setEditingRecord(null);
+    queryClient.invalidateQueries({ queryKey: ['inventory-records', id] });
+  }
+
   function handleExport() {
     if (!entity || !records) return;
     const exportableFields = entity.fields.filter(
@@ -124,6 +157,13 @@ export default function InventoryEntityPage({ params }: { params: Promise<{ id: 
 
   return (
     <main className="p-8">
+      <Link
+        href="/inventory"
+        className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-indigo-600"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to Dynamic Inventory
+      </Link>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-slate-900">{entity.name}</h1>
         <div className="flex gap-2">
@@ -138,7 +178,7 @@ export default function InventoryEntityPage({ params }: { params: Promise<{ id: 
             <DialogTrigger asChild>
               <Button>Add Record</Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
               <DialogTitle>Add {entity.name} Record</DialogTitle>
               <div className="mt-4">
                 <DynamicRecordForm fields={entity.fields} onSubmit={handleAddRecord} submitLabel="Add" />
@@ -174,7 +214,15 @@ export default function InventoryEntityPage({ params }: { params: Promise<{ id: 
                   </TableCell>
                 ))}
                 <TableCell>
-                  <AlertDialog>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                      onClick={() => setEditingRecord(record)}
+                    >
+                      Edit
+                    </button>
+                    <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <button className="text-sm font-medium text-red-600 hover:text-red-700">
                         Delete
@@ -194,13 +242,30 @@ export default function InventoryEntityPage({ params }: { params: Promise<{ id: 
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
-                  </AlertDialog>
+                    </AlertDialog>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       )}
+
+      <Dialog open={Boolean(editingRecord)} onOpenChange={(open) => !open && setEditingRecord(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogTitle>Edit {entity.name} Record</DialogTitle>
+          <div className="mt-4">
+            {editingRecord && (
+              <DynamicRecordForm
+                fields={entity.fields}
+                defaultValues={editingRecord.data}
+                onSubmit={handleEditRecord}
+                submitLabel="Save"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

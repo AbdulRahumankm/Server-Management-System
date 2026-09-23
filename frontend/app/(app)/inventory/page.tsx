@@ -30,9 +30,69 @@ import {
 import { EntityFieldBuilder, FieldDraft } from '@/components/inventory/EntityFieldBuilder';
 import { apiFetch } from '@/lib/apiClient';
 import { useCurrentUser } from '@/lib/useCurrentUser';
-import type { InventoryEntitySummary } from '@/types/inventory';
+import type { FieldType, InventoryEntitySummary } from '@/types/inventory';
 
 const BLANK_FIELD: FieldDraft = { fieldName: '', fieldType: 'TEXT', required: false, options: '' };
+
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const SLASH_DATE_RE = /^\d{1,2}\/\d{1,2}\/\d{2,4}$/;
+const BOOLEAN_STRINGS = ['true', 'false', 'yes', 'no'];
+
+function isDateLike(value: unknown): boolean {
+  if (value instanceof Date) return !Number.isNaN(value.getTime());
+  if (typeof value !== 'string') return false;
+  const trimmed = value.trim();
+  return ISO_DATE_RE.test(trimmed) || SLASH_DATE_RE.test(trimmed);
+}
+
+function isBooleanLike(value: unknown): boolean {
+  if (typeof value === 'boolean') return true;
+  if (typeof value !== 'string') return false;
+  return BOOLEAN_STRINGS.includes(value.trim().toLowerCase());
+}
+
+function isNumberLike(value: unknown): boolean {
+  if (typeof value === 'number') return true;
+  return typeof value === 'string' && value.trim() !== '' && !Number.isNaN(Number(value.trim()));
+}
+
+// Guesses a field's type from a column's header + sampled values, so a CSV/Excel
+// upload doesn't dump every column into a plain TEXT field (e.g. Start/End Date
+// columns should become date pickers, TRUE/FALSE columns real checkboxes).
+function inferFieldType(header: string, values: unknown[]): FieldType {
+  const nonEmpty = values.filter((v) => v !== '' && v !== null && v !== undefined);
+  const looksLikeDateHeader = /date/i.test(header);
+
+  if (nonEmpty.length === 0) return looksLikeDateHeader ? 'DATE' : 'TEXT';
+  if (nonEmpty.every(isDateLike) && (looksLikeDateHeader || nonEmpty.some((v) => v instanceof Date))) {
+    return 'DATE';
+  }
+  if (nonEmpty.every(isBooleanLike)) return 'BOOLEAN';
+  if (nonEmpty.every(isNumberLike)) return 'NUMBER';
+  return 'TEXT';
+}
+
+function toISODateString(value: unknown): string {
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? '' : date.toISOString().slice(0, 10);
+}
+
+// Coerces each cell to match its inferred field's type, since the backend's
+// BOOLEAN coercion treats any non-empty string (including "false") as true --
+// only a real JS boolean round-trips correctly.
+function normalizeRow(row: Record<string, unknown>, fields: FieldDraft[]): Record<string, unknown> {
+  const normalized: Record<string, unknown> = { ...row };
+  for (const field of fields) {
+    const value = row[field.fieldName];
+    if (value === '' || value === null || value === undefined) continue;
+    if (field.fieldType === 'DATE') {
+      normalized[field.fieldName] = toISODateString(value);
+    } else if (field.fieldType === 'BOOLEAN') {
+      normalized[field.fieldName] = ['true', 'yes'].includes(String(value).trim().toLowerCase());
+    }
+  }
+  return normalized;
+}
 
 function CreateEntityDialog() {
   const [open, setOpen] = useState(false);
@@ -61,7 +121,7 @@ function CreateEntityDialog() {
     setImportError(null);
     try {
       const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: 'array' });
+      const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const parsed = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' });
       if (parsed.length === 0) {
@@ -70,10 +130,17 @@ function CreateEntityDialog() {
         return;
       }
       const headers = Object.keys(parsed[0]);
-      setFields(
-        headers.map((header) => ({ fieldName: header, fieldType: 'TEXT', required: false, options: '' })),
-      );
-      setImportRows(parsed);
+      const inferredFields: FieldDraft[] = headers.map((header) => ({
+        fieldName: header,
+        fieldType: inferFieldType(
+          header,
+          parsed.map((row) => row[header]),
+        ),
+        required: false,
+        options: '',
+      }));
+      setFields(inferredFields);
+      setImportRows(parsed.map((row) => normalizeRow(row, inferredFields)));
     } catch {
       setImportError('Could not read this file. Use a CSV or Excel (.xlsx) export.');
       setImportRows([]);
@@ -140,7 +207,7 @@ function CreateEntityDialog() {
       <DialogTrigger asChild>
         <Button>Create Inventory</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
         <DialogTitle>Create Inventory Entity</DialogTitle>
         <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
           <div>
