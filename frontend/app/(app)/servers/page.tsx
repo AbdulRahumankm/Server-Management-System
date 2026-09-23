@@ -54,7 +54,7 @@ export default function ServersPage() {
   return (
     <main className="p-8">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-50">Servers</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">Servers</h1>
         <Button asChild>
           <Link href="/servers/new">Add Server</Link>
         </Button>
@@ -70,11 +70,9 @@ export default function ServersPage() {
         className="mb-4 max-w-sm"
       />
 
-      {isLoading && <p className="text-slate-500 dark:text-slate-400">Loading servers...</p>}
-      {isError && <p className="text-red-600 dark:text-red-400">Failed to load servers.</p>}
-      {data && data.data.length === 0 && (
-        <p className="text-slate-500 dark:text-slate-400">No servers found.</p>
-      )}
+      {isLoading && <p className="text-slate-500">Loading servers...</p>}
+      {isError && <p className="text-red-600">Failed to load servers.</p>}
+      {data && data.data.length === 0 && <p className="text-slate-500">No servers found.</p>}
 
       {data && data.data.length > 0 && (
         <Table>
@@ -93,7 +91,7 @@ export default function ServersPage() {
           <TableBody>
             {data.data.map((server) => (
               <TableRow key={server.id}>
-                <TableCell className="font-mono text-xs text-slate-900 dark:text-slate-100">
+                <TableCell className="font-mono text-xs font-medium text-slate-900">
                   {server.hostname}
                 </TableCell>
                 <TableCell className="font-mono text-xs">{server.ipAddress}</TableCell>
@@ -109,19 +107,19 @@ export default function ServersPage() {
                 <TableCell className="flex gap-3">
                   <Link
                     href={`/servers/${server.id}`}
-                    className="text-sm text-slate-600 underline hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                    className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
                   >
                     View
                   </Link>
                   <Link
                     href={`/servers/${server.id}/edit`}
-                    className="text-sm text-slate-600 underline hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                    className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
                   >
                     Edit
                   </Link>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <button className="text-sm text-red-600 underline hover:text-red-500 dark:text-red-400">
+                      <button className="text-sm font-medium text-red-600 hover:text-red-700">
                         Delete
                       </button>
                     </AlertDialogTrigger>
@@ -157,7 +155,7 @@ export default function ServersPage() {
           <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
             Previous
           </Button>
-          <span className="text-sm text-slate-500 dark:text-slate-400">
+          <span className="text-sm text-slate-500">
             Page {data.page} of {Math.ceil(data.total / data.pageSize)}
           </span>
           <Button

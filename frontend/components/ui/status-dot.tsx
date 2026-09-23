@@ -1,15 +1,19 @@
 import { cn } from '@/lib/utils';
 
-const STATUS_COLORS: Record<string, string> = {
-  ACTIVE: 'bg-emerald-500',
-  INACTIVE: 'bg-slate-400',
-  DECOMMISSIONED: 'bg-red-500',
+const STATUS_STYLES: Record<string, string> = {
+  ACTIVE: 'bg-emerald-100 text-emerald-700',
+  INACTIVE: 'bg-slate-100 text-slate-600',
+  DECOMMISSIONED: 'bg-red-100 text-red-700',
 };
 
 export function StatusDot({ status }: { status: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-200">
-      <span className={cn('h-2 w-2 rounded-full', STATUS_COLORS[status] ?? 'bg-slate-400')} />
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
+        STATUS_STYLES[status] ?? 'bg-slate-100 text-slate-600',
+      )}
+    >
       {status}
     </span>
   );

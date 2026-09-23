@@ -13,10 +13,10 @@ export function AlertDialogContent({
 }: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content>) {
   return (
     <AlertDialogPrimitive.Portal>
-      <AlertDialogPrimitive.Overlay className="fixed inset-0 bg-slate-950/60" />
+      <AlertDialogPrimitive.Overlay className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" />
       <AlertDialogPrimitive.Content
         className={cn(
-          'fixed left-1/2 top-1/2 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-md border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900',
+          'fixed left-1/2 top-1/2 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl',
           className,
         )}
         {...props}
@@ -29,20 +29,14 @@ export const AlertDialogTitle = ({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Title>) => (
-  <AlertDialogPrimitive.Title
-    className={cn('text-lg font-semibold text-slate-900 dark:text-slate-50', className)}
-    {...props}
-  />
+  <AlertDialogPrimitive.Title className={cn('text-lg font-semibold text-slate-900', className)} {...props} />
 );
 
 export const AlertDialogDescription = ({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Description>) => (
-  <AlertDialogPrimitive.Description
-    className={cn('mt-2 text-sm text-slate-500 dark:text-slate-400', className)}
-    {...props}
-  />
+  <AlertDialogPrimitive.Description className={cn('mt-2 text-sm text-slate-500', className)} {...props} />
 );
 
 export function AlertDialogFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {

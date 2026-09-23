@@ -45,10 +45,11 @@ export default function UploadKeyPage() {
 
   return (
     <main className="p-8">
-      <h1 className="mb-6 text-2xl font-semibold text-slate-900 dark:text-slate-50">
-        Upload SSH Key
-      </h1>
-      <form onSubmit={handleSubmit} className="flex max-w-xl flex-col gap-4">
+      <h1 className="mb-6 text-2xl font-semibold text-slate-900">Upload SSH Key</h1>
+      <form
+        onSubmit={handleSubmit}
+        className="flex max-w-xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+      >
         <div>
           <Label htmlFor="name">Key Name</Label>
           <Input
@@ -63,7 +64,7 @@ export default function UploadKeyPage() {
           <Label htmlFor="keyType">Key Type</Label>
           <select
             id="keyType"
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50"
+            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             value={keyType}
             onChange={(e) => setKeyType(e.target.value)}
           >
@@ -77,7 +78,7 @@ export default function UploadKeyPage() {
           <Label htmlFor="description">Description</Label>
           <textarea
             id="description"
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50"
+            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -89,7 +90,7 @@ export default function UploadKeyPage() {
             id="file"
             type="file"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="block text-sm text-slate-700 dark:text-slate-300"
+            className="block text-sm text-slate-700"
             required
           />
         </div>

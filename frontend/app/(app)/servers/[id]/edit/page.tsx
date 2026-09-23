@@ -37,13 +37,12 @@ export default function EditServerPage({ params }: { params: Promise<{ id: strin
     router.push(`/servers/${id}`);
   }
 
-  if (isLoading) return <main className="p-8 text-slate-500 dark:text-slate-400">Loading...</main>;
-  if (!server)
-    return <main className="p-8 text-slate-500 dark:text-slate-400">Server not found.</main>;
+  if (isLoading) return <main className="p-8 text-slate-500">Loading...</main>;
+  if (!server) return <main className="p-8 text-slate-500">Server not found.</main>;
 
   return (
     <main className="p-8">
-      <h1 className="mb-6 text-2xl font-semibold text-slate-900 dark:text-slate-50">
+      <h1 className="mb-6 text-2xl font-semibold text-slate-900">
         Edit <span className="font-mono">{server.hostname}</span>
       </h1>
       <ServerForm

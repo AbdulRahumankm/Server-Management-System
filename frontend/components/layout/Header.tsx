@@ -5,7 +5,6 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/apiClient';
 import { useCurrentUser } from '@/lib/useCurrentUser';
-import { ThemeToggle } from './ThemeToggle';
 
 export function Header() {
   const router = useRouter();
@@ -18,15 +17,19 @@ export function Header() {
   }
 
   return (
-    <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3 dark:border-slate-800 dark:bg-slate-900">
+    <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
       <div />
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         {currentUser && (
-          <span className="text-sm text-slate-600 dark:text-slate-400">
-            {currentUser.name} <span className="text-slate-400 dark:text-slate-500">· {currentUser.role}</span>
-          </span>
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-xs font-semibold text-white">
+              {currentUser.name.charAt(0).toUpperCase()}
+            </div>
+            <span className="text-sm text-slate-600">
+              {currentUser.name} <span className="text-slate-400">· {currentUser.role}</span>
+            </span>
+          </div>
         )}
-        <ThemeToggle />
         <Button variant="outline" size="sm" onClick={handleLogout}>
           Sign out
         </Button>

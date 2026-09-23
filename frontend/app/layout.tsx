@@ -17,8 +17,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`dark ${inter.variable} ${plexMono.variable}`}>
-      <body className="bg-white font-sans text-slate-900 dark:bg-slate-950 dark:text-slate-50">
+    <html lang="en" className={`${inter.variable} ${plexMono.variable}`}>
+      <body className="bg-slate-50 font-sans text-slate-900">
         <Providers>{children}</Providers>
       </body>
     </html>

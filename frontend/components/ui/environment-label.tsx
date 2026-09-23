@@ -1,15 +1,20 @@
 import { cn } from '@/lib/utils';
 
-const ENVIRONMENT_COLORS: Record<string, string> = {
-  PRODUCTION: 'text-sky-600 dark:text-sky-400',
-  UAT: 'text-amber-600 dark:text-amber-400',
-  DEVELOPMENT: 'text-violet-600 dark:text-violet-400',
-  TEST: 'text-slate-500 dark:text-slate-400',
+const ENVIRONMENT_STYLES: Record<string, string> = {
+  PRODUCTION: 'bg-sky-100 text-sky-700',
+  UAT: 'bg-amber-100 text-amber-700',
+  DEVELOPMENT: 'bg-violet-100 text-violet-700',
+  TEST: 'bg-slate-100 text-slate-600',
 };
 
 export function EnvironmentLabel({ environment }: { environment: string }) {
   return (
-    <span className={cn('text-sm font-medium', ENVIRONMENT_COLORS[environment] ?? 'text-slate-500')}>
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
+        ENVIRONMENT_STYLES[environment] ?? 'bg-slate-100 text-slate-600',
+      )}
+    >
       {environment}
     </span>
   );

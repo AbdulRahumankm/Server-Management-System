@@ -42,26 +42,28 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-white dark:bg-slate-950">
-      <form onSubmit={handleSubmit(onSubmit)} className="flex w-80 flex-col gap-3">
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-50">
-          Server Inventory
-        </h1>
-        <p className="mb-2 text-sm text-slate-500 dark:text-slate-400">Sign in to continue</p>
+    <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-gradient-to-br from-slate-50 via-white to-indigo-50 p-4">
+      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 text-lg font-bold text-white shadow-lg shadow-indigo-500/30">
+        S
+      </div>
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="flex w-80 flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/50"
+      >
+        <h1 className="text-xl font-semibold text-slate-900">Server Inventory</h1>
+        <p className="mb-2 text-sm text-slate-500">Sign in to continue</p>
         <div>
           <Label htmlFor="email">Email</Label>
           <Input id="email" type="email" placeholder="Email" {...register('email')} />
-          {errors.email && <p className="text-sm text-red-600 dark:text-red-400">{errors.email.message}</p>}
+          {errors.email && <p className="text-sm text-red-600">{errors.email.message}</p>}
         </div>
         <div>
           <Label htmlFor="password">Password</Label>
           <Input id="password" type="password" placeholder="Password" {...register('password')} />
-          {errors.password && (
-            <p className="text-sm text-red-600 dark:text-red-400">{errors.password.message}</p>
-          )}
+          {errors.password && <p className="text-sm text-red-600">{errors.password.message}</p>}
         </div>
-        {serverError && <p className="text-sm text-red-600 dark:text-red-400">{serverError}</p>}
-        <Button type="submit" disabled={isSubmitting}>
+        {serverError && <p className="text-sm text-red-600">{serverError}</p>}
+        <Button type="submit" disabled={isSubmitting} className="mt-2">
           {isSubmitting ? 'Signing in...' : 'Sign in'}
         </Button>
       </form>

@@ -10,8 +10,8 @@ export function Breadcrumbs() {
   if (segments.length === 0) return null;
 
   return (
-    <div className="border-b border-slate-100 bg-slate-50 px-6 py-2 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-500">
-      <Link href="/dashboard" className="hover:underline dark:text-slate-400">
+    <div className="border-b border-slate-100 bg-slate-50/60 px-6 py-2 text-sm text-slate-500">
+      <Link href="/dashboard" className="hover:text-indigo-600 hover:underline">
         Home
       </Link>
       {segments.map((segment, index) => {
@@ -20,7 +20,7 @@ export function Breadcrumbs() {
         return (
           <span key={href}>
             {' / '}
-            <Link href={href} className="capitalize hover:underline dark:text-slate-400">
+            <Link href={href} className="capitalize hover:text-indigo-600 hover:underline">
               {label}
             </Link>
           </span>

@@ -29,9 +29,9 @@ interface ServerFormProps {
 }
 
 const selectClassName =
-  'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50';
+  'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500';
 const textareaClassName = selectClassName;
-const errorClassName = 'text-sm text-red-600 dark:text-red-400';
+const errorClassName = 'text-sm text-red-600';
 
 export function ServerForm({ defaultValues, onSubmit, submitLabel }: ServerFormProps) {
   const {
@@ -49,7 +49,10 @@ export function ServerForm({ defaultValues, onSubmit, submitLabel }: ServerFormP
   });
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex max-w-xl flex-col gap-4">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="flex max-w-xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+    >
       <div>
         <Label htmlFor="hostname">Hostname</Label>
         <Input id="hostname" className="font-mono" {...register('hostname')} />

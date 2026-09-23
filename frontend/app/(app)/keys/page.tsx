@@ -68,7 +68,7 @@ export default function KeysPage() {
   return (
     <main className="p-8">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-50">SSH Keys</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">SSH Keys</h1>
         {permissions.includes('key:upload') && (
           <Button asChild>
             <Link href="/keys/upload">Upload Key</Link>
@@ -83,11 +83,9 @@ export default function KeysPage() {
         className="mb-4 max-w-sm"
       />
 
-      {isLoading && <p className="text-slate-500 dark:text-slate-400">Loading keys...</p>}
-      {isError && <p className="text-red-600 dark:text-red-400">Failed to load keys.</p>}
-      {keys && keys.length === 0 && (
-        <p className="text-slate-500 dark:text-slate-400">No keys found.</p>
-      )}
+      {isLoading && <p className="text-slate-500">Loading keys...</p>}
+      {isError && <p className="text-red-600">Failed to load keys.</p>}
+      {keys && keys.length === 0 && <p className="text-slate-500">No keys found.</p>}
 
       {keys && keys.length > 0 && (
         <Table>
@@ -104,7 +102,7 @@ export default function KeysPage() {
           <TableBody>
             {keys.map((key) => (
               <TableRow key={key.id}>
-                <TableCell className="font-mono text-xs text-slate-900 dark:text-slate-100">
+                <TableCell className="font-mono text-xs font-medium text-slate-900">
                   {key.name}
                 </TableCell>
                 <TableCell>{key.keyType}</TableCell>
@@ -118,7 +116,7 @@ export default function KeysPage() {
                 <TableCell className="flex gap-3">
                   {permissions.includes('key:download') && (
                     <button
-                      className="text-sm text-slate-600 underline hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                      className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
                       onClick={() => handleDownload(key)}
                     >
                       Download
@@ -127,7 +125,7 @@ export default function KeysPage() {
                   {permissions.includes('key:delete') && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <button className="text-sm text-red-600 underline hover:text-red-500 dark:text-red-400">
+                        <button className="text-sm font-medium text-red-600 hover:text-red-700">
                           Delete
                         </button>
                       </AlertDialogTrigger>
