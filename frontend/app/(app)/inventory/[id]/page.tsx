@@ -18,13 +18,37 @@ import {
 } from '@/components/ui/alert-dialog';
 import { DynamicRecordForm } from '@/components/inventory/DynamicRecordForm';
 import { ImportRecordsDialog } from '@/components/inventory/ImportRecordsDialog';
+import { RecordCredentialDialog } from '@/components/inventory/RecordCredentialDialog';
 import { apiFetch } from '@/lib/apiClient';
-import type { InventoryEntity, PaginatedInventoryRecords } from '@/types/inventory';
+import { useCurrentUser } from '@/lib/useCurrentUser';
+import type { InventoryEntity, InventoryField, PaginatedInventoryRecords } from '@/types/inventory';
+
+function RecordCell({
+  field,
+  value,
+  recordId,
+  canReveal,
+}: {
+  field: InventoryField;
+  value: unknown;
+  recordId: string;
+  canReveal: boolean;
+}) {
+  if (field.fieldType === 'PASSWORD' || field.fieldType === 'SSH_KEY') {
+    const hasValue = Boolean((value as { hasValue?: boolean } | null)?.hasValue);
+    if (!hasValue) return <span className="text-slate-400">—</span>;
+    if (!canReveal) return <span className="text-slate-400">•••••</span>;
+    return <RecordCredentialDialog recordId={recordId} fieldName={field.fieldName} />;
+  }
+  return <>{String(value ?? '')}</>;
+}
 
 export default function InventoryEntityPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [addOpen, setAddOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { data: currentUser } = useCurrentUser();
+  const canReveal = (currentUser?.permissions ?? []).includes('inventory:credential:reveal');
 
   const { data: entity } = useQuery<InventoryEntity>({
     queryKey: ['inventory-entities', id],
@@ -57,14 +81,23 @@ export default function InventoryEntityPage({ params }: { params: Promise<{ id: 
     onError: () => toast.error('Failed to delete record'),
   });
 
-  async function handleAddRecord(data: Record<string, unknown>) {
-    const res = await apiFetch(`/api/inventory/entities/${id}/records`, {
-      method: 'POST',
-      body: JSON.stringify({ data }),
-    });
+  async function handleAddRecord(data: Record<string, unknown>, credentialFiles: Record<string, File>) {
+    let body: BodyInit;
+    if (Object.keys(credentialFiles).length > 0) {
+      const formData = new FormData();
+      formData.set('data', JSON.stringify(data));
+      for (const [fieldName, file] of Object.entries(credentialFiles)) {
+        formData.set(fieldName, file);
+      }
+      body = formData;
+    } else {
+      body = JSON.stringify({ data });
+    }
+
+    const res = await apiFetch(`/api/inventory/entities/${id}/records`, { method: 'POST', body });
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      toast.error(body.error ?? 'Failed to add record');
+      const errorBody = await res.json().catch(() => ({}));
+      toast.error(errorBody.error ?? 'Failed to add record');
       return;
     }
     toast.success('Record added');
@@ -114,7 +147,12 @@ export default function InventoryEntityPage({ params }: { params: Promise<{ id: 
               <TableRow key={record.id}>
                 {entity.fields.map((field) => (
                   <TableCell key={field.id} className="font-mono text-xs">
-                    {String(record.data[field.fieldName] ?? '')}
+                    <RecordCell
+                      field={field}
+                      value={record.data[field.fieldName]}
+                      recordId={record.id}
+                      canReveal={canReveal}
+                    />
                   </TableCell>
                 ))}
                 <TableCell>

@@ -95,7 +95,8 @@ export function ImportRecordsDialog({ entityId, onImported }: ImportRecordsDialo
         <div className="mt-4 flex flex-col gap-3">
           <p className="text-sm text-slate-500">
             Upload a CSV or Excel (.xlsx) file. The first row must contain column headers matching
-            this table&apos;s field names.
+            this table&apos;s field names. Columns for an SSH Key or Password field are skipped —
+            add those per record afterward.
           </p>
           <input
             type="file"
