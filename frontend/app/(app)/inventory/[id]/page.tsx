@@ -55,6 +55,8 @@ export default function InventoryEntityPage({ params }: { params: Promise<{ id: 
   const { id } = use(params);
   const [addOpen, setAddOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<InventoryRecord | null>(null);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 100;
   const queryClient = useQueryClient();
   const { data: currentUser } = useCurrentUser();
   const canReveal = (currentUser?.permissions ?? []).includes('inventory:credential:reveal');
@@ -69,14 +71,16 @@ export default function InventoryEntityPage({ params }: { params: Promise<{ id: 
   });
 
   const { data: records } = useQuery<PaginatedInventoryRecords>({
-    queryKey: ['inventory-records', id],
+    queryKey: ['inventory-records', id, page],
     queryFn: async () => {
-      const res = await apiFetch(`/api/inventory/entities/${id}/records`);
+      const res = await apiFetch(`/api/inventory/entities/${id}/records?page=${page}&pageSize=${PAGE_SIZE}`);
       if (!res.ok) throw new Error('Failed to load records');
       return res.json();
     },
     enabled: Boolean(entity),
   });
+
+  const totalPages = records ? Math.max(1, Math.ceil(records.total / records.pageSize)) : 1;
 
   const deleteMutation = useMutation({
     mutationFn: async (recordId: string) => {
@@ -139,12 +143,23 @@ export default function InventoryEntityPage({ params }: { params: Promise<{ id: 
     queryClient.invalidateQueries({ queryKey: ['inventory-records', id] });
   }
 
-  function handleExport() {
+  async function handleExport() {
     if (!entity || !records) return;
+    const allRecords: InventoryRecord[] = [];
+    for (let p = 1; p <= totalPages; p++) {
+      const res = await apiFetch(`/api/inventory/entities/${id}/records?page=${p}&pageSize=${PAGE_SIZE}`);
+      if (!res.ok) {
+        toast.error('Failed to export records');
+        return;
+      }
+      const body: PaginatedInventoryRecords = await res.json();
+      allRecords.push(...body.data);
+    }
+
     const exportableFields = entity.fields.filter(
       (field) => field.fieldType !== 'PASSWORD' && field.fieldType !== 'SSH_KEY',
     );
-    const rows = records.data.map((record) =>
+    const rows = allRecords.map((record) =>
       Object.fromEntries(exportableFields.map((field) => [field.fieldName, record.data[field.fieldName] ?? ''])),
     );
     const sheet = XLSX.utils.json_to_sheet(rows);
@@ -249,6 +264,37 @@ export default function InventoryEntityPage({ params }: { params: Promise<{ id: 
             ))}
           </TableBody>
         </Table>
+      )}
+
+      {records && records.total > 0 && (
+        <div className="mt-4 flex items-center justify-between text-sm text-slate-600">
+          <span>
+            Showing {(page - 1) * records.pageSize + 1}
+            {'–'}
+            {Math.min(page * records.pageSize, records.total)} of {records.total} records
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Previous
+            </Button>
+            <span>
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
       )}
 
       <Dialog open={Boolean(editingRecord)} onOpenChange={(open) => !open && setEditingRecord(null)}>
