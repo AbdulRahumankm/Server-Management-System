@@ -12,7 +12,27 @@ export interface FieldDraft {
   options: string; // comma-separated, used only when fieldType === 'SELECT'
 }
 
-const FIELD_TYPES: FieldType[] = ['TEXT', 'NUMBER', 'BOOLEAN', 'DATE', 'SELECT', 'TEXTAREA'];
+const FIELD_TYPES: FieldType[] = [
+  'TEXT',
+  'NUMBER',
+  'BOOLEAN',
+  'DATE',
+  'SELECT',
+  'TEXTAREA',
+  'SSH_KEY',
+  'PASSWORD',
+];
+
+const FIELD_TYPE_LABELS: Record<FieldType, string> = {
+  TEXT: 'TEXT',
+  NUMBER: 'NUMBER',
+  BOOLEAN: 'BOOLEAN',
+  DATE: 'DATE',
+  SELECT: 'SELECT',
+  TEXTAREA: 'TEXTAREA',
+  SSH_KEY: 'SSH Key',
+  PASSWORD: 'Password',
+};
 
 interface EntityFieldBuilderProps {
   fields: FieldDraft[];
@@ -57,7 +77,7 @@ export function EntityFieldBuilder({ fields, onChange }: EntityFieldBuilderProps
             >
               {FIELD_TYPES.map((type) => (
                 <option key={type} value={type}>
-                  {type}
+                  {FIELD_TYPE_LABELS[type]}
                 </option>
               ))}
             </select>

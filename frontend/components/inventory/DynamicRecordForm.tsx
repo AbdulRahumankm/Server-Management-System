@@ -9,12 +9,28 @@ import type { InventoryField } from '@/types/inventory';
 interface DynamicRecordFormProps {
   fields: InventoryField[];
   defaultValues?: Record<string, unknown>;
-  onSubmit: (data: Record<string, unknown>) => void | Promise<void>;
+  onSubmit: (
+    data: Record<string, unknown>,
+    credentialFiles: Record<string, File>,
+  ) => void | Promise<void>;
   submitLabel: string;
 }
 
 const controlClassName =
   'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500';
+
+function initialValues(
+  fields: InventoryField[],
+  defaultValues?: Record<string, unknown>,
+): Record<string, unknown> {
+  const initial = { ...(defaultValues ?? {}) };
+  for (const field of fields) {
+    if (field.fieldType === 'SSH_KEY' || field.fieldType === 'PASSWORD') {
+      delete initial[field.fieldName]; // never pre-fill a secret's sanitized placeholder
+    }
+  }
+  return initial;
+}
 
 export function DynamicRecordForm({
   fields,
@@ -22,17 +38,29 @@ export function DynamicRecordForm({
   onSubmit,
   submitLabel,
 }: DynamicRecordFormProps) {
-  const [values, setValues] = useState<Record<string, unknown>>(defaultValues ?? {});
+  const [values, setValues] = useState<Record<string, unknown>>(() =>
+    initialValues(fields, defaultValues),
+  );
+  const [credentialFiles, setCredentialFiles] = useState<Record<string, File>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function setValue(fieldName: string, value: unknown) {
     setValues((prev) => ({ ...prev, [fieldName]: value }));
   }
 
+  function setCredentialFile(fieldName: string, file: File | null) {
+    setCredentialFiles((prev) => {
+      const next = { ...prev };
+      if (file) next[fieldName] = file;
+      else delete next[fieldName];
+      return next;
+    });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setIsSubmitting(true);
-    await onSubmit(values);
+    await onSubmit(values, credentialFiles);
     setIsSubmitting(false);
   }
 
@@ -88,6 +116,35 @@ export function DynamicRecordForm({
               value={(values[field.fieldName] as string) ?? ''}
               onChange={(e) => setValue(field.fieldName, e.target.value)}
             />
+          )}
+          {field.fieldType === 'PASSWORD' && (
+            <Input
+              id={field.fieldName}
+              type="password"
+              value={(values[field.fieldName] as string) ?? ''}
+              onChange={(e) => setValue(field.fieldName, e.target.value)}
+              placeholder={defaultValues ? 'Leave blank to keep the existing password' : undefined}
+            />
+          )}
+          {field.fieldType === 'SSH_KEY' && (
+            <div className="flex flex-col gap-2">
+              <select
+                id={field.fieldName}
+                className={controlClassName}
+                value={(values[field.fieldName] as string) ?? ''}
+                onChange={(e) => setValue(field.fieldName, e.target.value || undefined)}
+              >
+                <option value="">Select format...</option>
+                <option value="PEM">PEM</option>
+                <option value="PPK">PPK (PuTTY)</option>
+              </select>
+              <input
+                type="file"
+                aria-label={`${field.fieldName} file`}
+                className="block text-sm text-slate-700"
+                onChange={(e) => setCredentialFile(field.fieldName, e.target.files?.[0] ?? null)}
+              />
+            </div>
           )}
         </div>
       ))}

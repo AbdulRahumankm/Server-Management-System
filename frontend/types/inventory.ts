@@ -1,4 +1,17 @@
-export type FieldType = 'TEXT' | 'NUMBER' | 'BOOLEAN' | 'DATE' | 'SELECT' | 'TEXTAREA';
+export type FieldType =
+  | 'TEXT'
+  | 'NUMBER'
+  | 'BOOLEAN'
+  | 'DATE'
+  | 'SELECT'
+  | 'TEXTAREA'
+  | 'SSH_KEY'
+  | 'PASSWORD';
+
+export interface SecretFieldValue {
+  hasValue: true;
+  keyFormat?: 'PEM' | 'PPK';
+}
 
 export interface InventoryField {
   id: string;
