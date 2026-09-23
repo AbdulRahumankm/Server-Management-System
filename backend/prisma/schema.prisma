@@ -7,25 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum OperatingSystem {
-  LINUX
-  WINDOWS
-  OTHER
-}
-
-enum Environment {
-  PRODUCTION
-  UAT
-  DEVELOPMENT
-  TEST
-}
-
-enum ServerStatus {
-  ACTIVE
-  INACTIVE
-  DECOMMISSIONED
-}
-
 enum FieldType {
   TEXT
   NUMBER
@@ -42,11 +23,6 @@ enum AuthProvider {
   OIDC
 }
 
-enum KeyFormat {
-  PEM
-  PPK
-}
-
 model User {
   id           String       @id @default(uuid())
   email        String       @unique
@@ -59,8 +35,6 @@ model User {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
-  createdServers    Server[]          @relation("ServerCreatedBy")
-  sshKeys           SSHKey[]
   auditLogs         AuditLog[]
   inventoryEntities InventoryEntity[]
   inventoryRecords  InventoryRecord[]
@@ -92,55 +66,6 @@ model RolePermission {
   permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
-}
-
-model Server {
-  id            String          @id @default(uuid())
-  hostname      String          @unique
-  ipAddress     String
-  os            OperatingSystem
-  environment   Environment
-  application   String
-  owner         String
-  location      String?
-  username      String
-  sshPort       Int             @default(22)
-  description   String?
-  status        ServerStatus    @default(ACTIVE)
-  assignedKeyId String?         @unique
-  assignedKey   SSHKey?         @relation(fields: [assignedKeyId], references: [id])
-  windowsPasswordCiphertext String?
-  windowsPasswordIv         String?
-  windowsPasswordAuthTag    String?
-  createdById   String
-  createdBy     User            @relation("ServerCreatedBy", fields: [createdById], references: [id])
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-
-  @@index([ipAddress])
-  @@index([environment])
-  @@index([os])
-  @@index([createdAt])
-}
-
-model SSHKey {
-  id             String    @id @default(uuid())
-  name           String    @unique
-  keyType        String
-  keyFormat      KeyFormat @default(PEM)
-  description    String?
-  ownerId        String
-  owner          User      @relation(fields: [ownerId], references: [id])
-  storageRef     String
-  iv             String
-  authTag        String
-  lastAccessedAt DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  assignedServer Server?
-
-  @@index([ownerId])
 }
 
 model InventoryEntity {
