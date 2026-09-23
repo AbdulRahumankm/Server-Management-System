@@ -15,30 +15,75 @@ services:
       timeout: 5s
       retries: 10
 
-  backend:
-    build: ./backend
+  auth-service:
+    build: ./auth-service
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      PORT: ${PORT}
+      DATABASE_URL: ${AUTH_DATABASE_URL}
+      PORT: 4001
       CORS_ORIGIN: ${CORS_ORIGIN}
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
-      KEY_STORAGE_PATH: ${KEY_STORAGE_PATH}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD}
-    ports:
-      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4001/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  inventory-service:
+    build: ./inventory-service
+    environment:
+      DATABASE_URL: ${INVENTORY_DATABASE_URL}
+      PORT: 4002
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      JWT_SECRET: ${JWT_SECRET}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      KEY_STORAGE_PATH: ${KEY_STORAGE_PATH}
+      AUDIT_SERVICE_URL: http://audit-service:4003
     volumes:
       - key-storage:/app/key-storage
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:4000/api/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:4002/api/health"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  audit-service:
+    build: ./audit-service
+    environment:
+      DATABASE_URL: ${AUDIT_DATABASE_URL}
+      PORT: 4003
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4003/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  gateway:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      inventory-service:
+        condition: service_healthy
+      audit-service:
+        condition: service_healthy
 
   frontend:
     build: ./frontend
@@ -47,7 +92,7 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - backend
+      - gateway
 
 volumes:
   postgres-data:
