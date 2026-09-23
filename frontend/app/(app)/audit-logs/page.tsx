@@ -8,6 +8,12 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { apiFetch } from '@/lib/apiClient';
 import type { PaginatedAuditLogs } from '@/types/auditLog';
 
+interface UserLookupEntry {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export default function AuditLogsPage() {
   const [action, setAction] = useState('');
   const [page, setPage] = useState(1);
@@ -24,12 +30,28 @@ export default function AuditLogsPage() {
     },
   });
 
+  const userIds = Array.from(
+    new Set((data?.data ?? []).map((e) => e.userId).filter((id): id is string => Boolean(id))),
+  );
+
+  const { data: userLookup } = useQuery<UserLookupEntry[]>({
+    queryKey: ['user-lookup', userIds],
+    queryFn: async () => {
+      const res = await apiFetch(`/api/users/lookup?ids=${userIds.join(',')}`);
+      if (!res.ok) throw new Error('Failed to resolve users');
+      return res.json();
+    },
+    enabled: userIds.length > 0,
+  });
+
+  const userById = new Map((userLookup ?? []).map((u) => [u.id, u]));
+
   return (
     <main className="p-8">
       <h1 className="mb-6 text-2xl font-semibold text-slate-900">Audit Logs</h1>
 
       <Input
-        placeholder="Filter by action (e.g. SERVER_CREATED)"
+        placeholder="Filter by action (e.g. INVENTORY_RECORD_CREATED)"
         value={action}
         onChange={(e) => {
           setAction(e.target.value);
@@ -57,7 +79,9 @@ export default function AuditLogsPage() {
             {data.data.map((entry) => (
               <TableRow key={entry.id}>
                 <TableCell>{new Date(entry.createdAt).toLocaleString()}</TableCell>
-                <TableCell>{entry.user?.email ?? 'Unknown'}</TableCell>
+                <TableCell>
+                  {entry.userId ? (userById.get(entry.userId)?.email ?? entry.userId) : 'Unknown'}
+                </TableCell>
                 <TableCell>
                   <span className="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-1 font-mono text-xs font-medium text-indigo-700">
                     {entry.action}

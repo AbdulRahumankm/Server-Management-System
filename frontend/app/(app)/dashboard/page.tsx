@@ -29,9 +29,14 @@ export default function DashboardPage() {
   const { data, isLoading, isError } = useQuery<DashboardStats>({
     queryKey: ['dashboard'],
     queryFn: async () => {
-      const res = await apiFetch('/api/dashboard');
-      if (!res.ok) throw new Error('Failed to load dashboard');
-      return res.json();
+      const [statsRes, usersRes] = await Promise.all([
+        apiFetch('/api/inventory/stats'),
+        apiFetch('/api/users/count'),
+      ]);
+      if (!statsRes.ok || !usersRes.ok) throw new Error('Failed to load dashboard');
+      const stats = await statsRes.json();
+      const users = await usersRes.json();
+      return { totalEntities: stats.totalEntities, totalRecords: stats.totalRecords, totalUsers: users.totalUsers };
     },
   });
 
