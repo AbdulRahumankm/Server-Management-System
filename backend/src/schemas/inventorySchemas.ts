@@ -1,6 +1,15 @@
 import { z } from 'zod';
 
-export const fieldTypeEnum = z.enum(['TEXT', 'NUMBER', 'BOOLEAN', 'DATE', 'SELECT', 'TEXTAREA']);
+export const fieldTypeEnum = z.enum([
+  'TEXT',
+  'NUMBER',
+  'BOOLEAN',
+  'DATE',
+  'SELECT',
+  'TEXTAREA',
+  'SSH_KEY',
+  'PASSWORD',
+]);
 
 export const createFieldSchema = z
   .object({

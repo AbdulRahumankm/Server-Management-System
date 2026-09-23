@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { requireAuth } from '../middleware/requireAuth';
 import { requirePermission } from '../middleware/requirePermission';
 import {
@@ -12,7 +13,13 @@ import {
   bulkCreateRecordsHandler,
   updateRecordHandler,
   deleteRecordHandler,
+  revealRecordFieldHandler,
 } from '../controllers/inventoryController';
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 64 * 1024 },
+});
 
 export const inventoryRouter = Router();
 inventoryRouter.use(requireAuth);
@@ -26,6 +33,7 @@ inventoryRouter.get('/entities/:id/records', requirePermission('inventory:view')
 inventoryRouter.post(
   '/entities/:id/records',
   requirePermission('inventory:manage'),
+  upload.any(),
   createRecordHandler,
 );
 inventoryRouter.post(
@@ -33,5 +41,15 @@ inventoryRouter.post(
   requirePermission('inventory:manage'),
   bulkCreateRecordsHandler,
 );
-inventoryRouter.put('/records/:id', requirePermission('inventory:manage'), updateRecordHandler);
+inventoryRouter.put(
+  '/records/:id',
+  requirePermission('inventory:manage'),
+  upload.any(),
+  updateRecordHandler,
+);
 inventoryRouter.delete('/records/:id', requirePermission('inventory:manage'), deleteRecordHandler);
+inventoryRouter.get(
+  '/records/:id/fields/:fieldName/reveal',
+  requirePermission('inventory:credential:reveal'),
+  revealRecordFieldHandler,
+);

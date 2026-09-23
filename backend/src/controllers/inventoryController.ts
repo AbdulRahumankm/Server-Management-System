@@ -17,12 +17,33 @@ import {
   updateRecord,
   deleteRecord,
   bulkCreateRecords,
+  revealRecordField,
   InventoryEntityNotFoundError,
   DuplicateEntityNameError,
   InventoryRecordNotFoundError,
   InvalidRecordDataError,
+  InvalidCredentialError,
+  InventoryFieldNotFoundError,
+  InventoryFieldNotSecretError,
 } from '../services/inventoryService';
+import type { CredentialFileInput } from '../services/inventoryService';
 import { logAudit, AUDIT_ACTIONS, requestContext } from '../services/auditService';
+
+function parseRecordBody(req: Request): unknown {
+  if (typeof req.body?.data === 'string') {
+    try {
+      return { data: JSON.parse(req.body.data) };
+    } catch {
+      return { data: undefined };
+    }
+  }
+  return req.body;
+}
+
+function extractCredentialFiles(req: Request): CredentialFileInput[] {
+  const files = (req.files as Express.Multer.File[] | undefined) ?? [];
+  return files.map((f) => ({ fieldName: f.fieldname, buffer: f.buffer }));
+}
 
 export async function listEntitiesHandler(_req: Request, res: Response): Promise<void> {
   res.status(200).json(await listEntities());
@@ -113,13 +134,18 @@ export async function listRecordsHandler(req: Request, res: Response): Promise<v
 }
 
 export async function createRecordHandler(req: Request, res: Response): Promise<void> {
-  const parsed = createRecordSchema.safeParse(req.body);
+  const parsed = createRecordSchema.safeParse(parseRecordBody(req));
   if (!parsed.success) {
     res.status(400).json({ error: 'Invalid request', details: parsed.error.flatten() });
     return;
   }
   try {
-    const record = await createRecord(req.params.id, parsed.data.data, req.user!.id);
+    const record = await createRecord(
+      req.params.id,
+      parsed.data.data,
+      req.user!.id,
+      extractCredentialFiles(req),
+    );
     await logAudit({
       userId: req.user!.id,
       action: AUDIT_ACTIONS.INVENTORY_RECORD_CREATED,
@@ -136,6 +162,10 @@ export async function createRecordHandler(req: Request, res: Response): Promise<
     }
     if (err instanceof InvalidRecordDataError) {
       res.status(400).json({ error: 'Invalid record data', details: err.issues });
+      return;
+    }
+    if (err instanceof InvalidCredentialError) {
+      res.status(400).json({ error: err.message });
       return;
     }
     throw err;
@@ -169,13 +199,17 @@ export async function bulkCreateRecordsHandler(req: Request, res: Response): Pro
 }
 
 export async function updateRecordHandler(req: Request, res: Response): Promise<void> {
-  const parsed = updateRecordSchema.safeParse(req.body);
+  const parsed = updateRecordSchema.safeParse(parseRecordBody(req));
   if (!parsed.success) {
     res.status(400).json({ error: 'Invalid request', details: parsed.error.flatten() });
     return;
   }
   try {
-    const record = await updateRecord(req.params.id, parsed.data.data);
+    const record = await updateRecord(
+      req.params.id,
+      parsed.data.data,
+      extractCredentialFiles(req),
+    );
     res.status(200).json(record);
   } catch (err) {
     if (err instanceof InventoryRecordNotFoundError) {
@@ -184,6 +218,45 @@ export async function updateRecordHandler(req: Request, res: Response): Promise<
     }
     if (err instanceof InvalidRecordDataError) {
       res.status(400).json({ error: 'Invalid record data', details: err.issues });
+      return;
+    }
+    if (err instanceof InvalidCredentialError) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    throw err;
+  }
+}
+
+export async function revealRecordFieldHandler(req: Request, res: Response): Promise<void> {
+  try {
+    const result = await revealRecordField(req.params.id, req.params.fieldName);
+    await logAudit({
+      userId: req.user!.id,
+      action: AUDIT_ACTIONS.CREDENTIAL_VIEWED,
+      resourceType: 'InventoryRecord',
+      resourceId: req.params.id,
+      metadata: { fieldName: req.params.fieldName },
+      ...requestContext(req),
+    });
+    if (result.fieldType === 'PASSWORD') {
+      res.status(200).json({ fieldType: 'PASSWORD', value: result.value });
+      return;
+    }
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${req.params.fieldName}.key"`);
+    res.status(200).send(result.buffer);
+  } catch (err) {
+    if (err instanceof InventoryRecordNotFoundError) {
+      res.status(404).json({ error: 'Record not found' });
+      return;
+    }
+    if (err instanceof InventoryFieldNotFoundError) {
+      res.status(404).json({ error: 'Field not found' });
+      return;
+    }
+    if (err instanceof InventoryFieldNotSecretError) {
+      res.status(400).json({ error: 'Field is not a credential field' });
       return;
     }
     throw err;

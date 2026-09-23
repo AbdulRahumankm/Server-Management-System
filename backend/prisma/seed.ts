@@ -16,6 +16,7 @@ const PERMISSIONS = [
   'inventory:create',
   'inventory:manage',
   'inventory:view',
+  'inventory:credential:reveal',
   'audit:view',
 ] as const;
 
@@ -34,6 +35,7 @@ const ROLE_PERMISSIONS: Record<string, readonly string[]> = {
     'inventory:view',
     'inventory:create',
     'inventory:manage',
+    'inventory:credential:reveal',
     'audit:view',
   ],
   Operator: [
@@ -45,6 +47,7 @@ const ROLE_PERMISSIONS: Record<string, readonly string[]> = {
     'key:assign',
     'inventory:view',
     'inventory:manage',
+    'inventory:credential:reveal',
     'audit:view',
   ],
   Viewer: ['server:view', 'key:view', 'inventory:view', 'audit:view'],
