@@ -3,6 +3,8 @@ WORKDIR /app
 COPY certs/ ./certs/
 RUN touch ./certs/extra-ca.pem
 ENV NODE_EXTRA_CA_CERTS=/app/certs/extra-ca.pem
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 COPY package*.json ./
 RUN npm install
 COPY . .
