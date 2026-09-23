@@ -27,7 +27,7 @@ export default function NewServerPage() {
 
   return (
     <main className="p-8">
-      <h1 className="mb-6 text-2xl font-semibold">Add Server</h1>
+      <h1 className="mb-6 text-2xl font-semibold text-slate-900 dark:text-slate-50">Add Server</h1>
       <ServerForm onSubmit={handleSubmit} submitLabel="Create Server" />
     </main>
   );

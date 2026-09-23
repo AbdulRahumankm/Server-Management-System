@@ -6,6 +6,8 @@ import { z } from 'zod';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { apiFetch } from '@/lib/apiClient';
 
 const loginSchema = z.object({
@@ -40,28 +42,25 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-white dark:bg-slate-950">
       <form onSubmit={handleSubmit(onSubmit)} className="flex w-80 flex-col gap-3">
-        <h1 className="text-xl font-semibold">Sign in</h1>
+        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-50">
+          Server Inventory
+        </h1>
+        <p className="mb-2 text-sm text-slate-500 dark:text-slate-400">Sign in to continue</p>
         <div>
-          <input
-            type="email"
-            placeholder="Email"
-            className="w-full rounded-md border border-slate-300 px-3 py-2"
-            {...register('email')}
-          />
-          {errors.email && <p className="text-sm text-red-600">{errors.email.message}</p>}
+          <Label htmlFor="email">Email</Label>
+          <Input id="email" type="email" placeholder="Email" {...register('email')} />
+          {errors.email && <p className="text-sm text-red-600 dark:text-red-400">{errors.email.message}</p>}
         </div>
         <div>
-          <input
-            type="password"
-            placeholder="Password"
-            className="w-full rounded-md border border-slate-300 px-3 py-2"
-            {...register('password')}
-          />
-          {errors.password && <p className="text-sm text-red-600">{errors.password.message}</p>}
+          <Label htmlFor="password">Password</Label>
+          <Input id="password" type="password" placeholder="Password" {...register('password')} />
+          {errors.password && (
+            <p className="text-sm text-red-600 dark:text-red-400">{errors.password.message}</p>
+          )}
         </div>
-        {serverError && <p className="text-sm text-red-600">{serverError}</p>}
+        {serverError && <p className="text-sm text-red-600 dark:text-red-400">{serverError}</p>}
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? 'Signing in...' : 'Sign in'}
         </Button>

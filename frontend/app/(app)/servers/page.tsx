@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { StatusDot } from '@/components/ui/status-dot';
+import { EnvironmentLabel } from '@/components/ui/environment-label';
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -52,7 +54,7 @@ export default function ServersPage() {
   return (
     <main className="p-8">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Servers</h1>
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-50">Servers</h1>
         <Button asChild>
           <Link href="/servers/new">Add Server</Link>
         </Button>
@@ -68,9 +70,11 @@ export default function ServersPage() {
         className="mb-4 max-w-sm"
       />
 
-      {isLoading && <p>Loading servers...</p>}
-      {isError && <p className="text-red-600">Failed to load servers.</p>}
-      {data && data.data.length === 0 && <p className="text-slate-500">No servers found.</p>}
+      {isLoading && <p className="text-slate-500 dark:text-slate-400">Loading servers...</p>}
+      {isError && <p className="text-red-600 dark:text-red-400">Failed to load servers.</p>}
+      {data && data.data.length === 0 && (
+        <p className="text-slate-500 dark:text-slate-400">No servers found.</p>
+      )}
 
       {data && data.data.length > 0 && (
         <Table>
@@ -89,26 +93,37 @@ export default function ServersPage() {
           <TableBody>
             {data.data.map((server) => (
               <TableRow key={server.id}>
-                <TableCell>{server.hostname}</TableCell>
-                <TableCell>{server.ipAddress}</TableCell>
+                <TableCell className="font-mono text-xs text-slate-900 dark:text-slate-100">
+                  {server.hostname}
+                </TableCell>
+                <TableCell className="font-mono text-xs">{server.ipAddress}</TableCell>
                 <TableCell>{server.os}</TableCell>
-                <TableCell>{server.environment}</TableCell>
+                <TableCell>
+                  <EnvironmentLabel environment={server.environment} />
+                </TableCell>
                 <TableCell>{server.application}</TableCell>
                 <TableCell>{server.owner}</TableCell>
-                <TableCell>{server.status}</TableCell>
-                <TableCell className="flex gap-2">
-                  <Link href={`/servers/${server.id}`} className="text-sm text-slate-700 underline">
+                <TableCell>
+                  <StatusDot status={server.status} />
+                </TableCell>
+                <TableCell className="flex gap-3">
+                  <Link
+                    href={`/servers/${server.id}`}
+                    className="text-sm text-slate-600 underline hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                  >
                     View
                   </Link>
                   <Link
                     href={`/servers/${server.id}/edit`}
-                    className="text-sm text-slate-700 underline"
+                    className="text-sm text-slate-600 underline hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
                   >
                     Edit
                   </Link>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <button className="text-sm text-red-600 underline">Delete</button>
+                      <button className="text-sm text-red-600 underline hover:text-red-500 dark:text-red-400">
+                        Delete
+                      </button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogTitle>Delete {server.hostname}?</AlertDialogTitle>
@@ -142,7 +157,7 @@ export default function ServersPage() {
           <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
             Previous
           </Button>
-          <span className="text-sm text-slate-500">
+          <span className="text-sm text-slate-500 dark:text-slate-400">
             Page {data.page} of {Math.ceil(data.total / data.pageSize)}
           </span>
           <Button

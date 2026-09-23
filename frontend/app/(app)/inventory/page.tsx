@@ -120,24 +120,32 @@ export default function InventoryPage() {
   return (
     <main className="p-8">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Dynamic Inventory</h1>
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-50">
+          Dynamic Inventory
+        </h1>
         <CreateEntityDialog />
       </div>
 
-      {isLoading && <p>Loading inventory entities...</p>}
-      {isError && <p className="text-red-600">Failed to load inventory entities.</p>}
-      {entities && entities.length === 0 && <p className="text-slate-500">No inventory entities yet.</p>}
+      {isLoading && (
+        <p className="text-slate-500 dark:text-slate-400">Loading inventory entities...</p>
+      )}
+      {isError && <p className="text-red-600 dark:text-red-400">Failed to load inventory entities.</p>}
+      {entities && entities.length === 0 && (
+        <p className="text-slate-500 dark:text-slate-400">No inventory entities yet.</p>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {entities?.map((entity) => (
           <Link
             key={entity.id}
             href={`/inventory/${entity.id}`}
-            className="rounded-lg border border-slate-200 p-4 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 p-4 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800"
           >
-            <h2 className="text-lg font-medium">{entity.name}</h2>
-            {entity.description && <p className="text-sm text-slate-500">{entity.description}</p>}
-            <p className="mt-2 text-xs text-slate-400">
+            <h2 className="text-lg font-medium text-slate-900 dark:text-slate-50">{entity.name}</h2>
+            {entity.description && (
+              <p className="text-sm text-slate-500 dark:text-slate-400">{entity.description}</p>
+            )}
+            <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
               {entity.fields.length} fields · {entity._count.records} records
             </p>
           </Link>

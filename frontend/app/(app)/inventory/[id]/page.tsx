@@ -71,12 +71,12 @@ export default function InventoryEntityPage({ params }: { params: Promise<{ id: 
     queryClient.invalidateQueries({ queryKey: ['inventory-records', id] });
   }
 
-  if (!entity) return <main className="p-8">Loading...</main>;
+  if (!entity) return <main className="p-8 text-slate-500 dark:text-slate-400">Loading...</main>;
 
   return (
     <main className="p-8">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{entity.name}</h1>
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-50">{entity.name}</h1>
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
             <Button>Add Record</Button>
@@ -90,7 +90,9 @@ export default function InventoryEntityPage({ params }: { params: Promise<{ id: 
         </Dialog>
       </div>
 
-      {records && records.data.length === 0 && <p className="text-slate-500">No records yet.</p>}
+      {records && records.data.length === 0 && (
+        <p className="text-slate-500 dark:text-slate-400">No records yet.</p>
+      )}
 
       {records && records.data.length > 0 && (
         <Table>
@@ -106,12 +108,16 @@ export default function InventoryEntityPage({ params }: { params: Promise<{ id: 
             {records.data.map((record) => (
               <TableRow key={record.id}>
                 {entity.fields.map((field) => (
-                  <TableCell key={field.id}>{String(record.data[field.fieldName] ?? '')}</TableCell>
+                  <TableCell key={field.id} className="font-mono text-xs">
+                    {String(record.data[field.fieldName] ?? '')}
+                  </TableCell>
                 ))}
                 <TableCell>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <button className="text-sm text-red-600 underline">Delete</button>
+                      <button className="text-sm text-red-600 underline hover:text-red-500 dark:text-red-400">
+                        Delete
+                      </button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogTitle>Delete this record?</AlertDialogTitle>

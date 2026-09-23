@@ -28,6 +28,11 @@ interface ServerFormProps {
   submitLabel: string;
 }
 
+const selectClassName =
+  'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50';
+const textareaClassName = selectClassName;
+const errorClassName = 'text-sm text-red-600 dark:text-red-400';
+
 export function ServerForm({ defaultValues, onSubmit, submitLabel }: ServerFormProps) {
   const {
     register,
@@ -47,21 +52,17 @@ export function ServerForm({ defaultValues, onSubmit, submitLabel }: ServerFormP
     <form onSubmit={handleSubmit(onSubmit)} className="flex max-w-xl flex-col gap-4">
       <div>
         <Label htmlFor="hostname">Hostname</Label>
-        <Input id="hostname" {...register('hostname')} />
-        {errors.hostname && <p className="text-sm text-red-600">{errors.hostname.message}</p>}
+        <Input id="hostname" className="font-mono" {...register('hostname')} />
+        {errors.hostname && <p className={errorClassName}>{errors.hostname.message}</p>}
       </div>
       <div>
         <Label htmlFor="ipAddress">IP Address</Label>
-        <Input id="ipAddress" {...register('ipAddress')} />
-        {errors.ipAddress && <p className="text-sm text-red-600">{errors.ipAddress.message}</p>}
+        <Input id="ipAddress" className="font-mono" {...register('ipAddress')} />
+        {errors.ipAddress && <p className={errorClassName}>{errors.ipAddress.message}</p>}
       </div>
       <div>
         <Label htmlFor="os">Operating System</Label>
-        <select
-          id="os"
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-          {...register('os')}
-        >
+        <select id="os" className={selectClassName} {...register('os')}>
           <option value="LINUX">Linux</option>
           <option value="WINDOWS">Windows</option>
           <option value="OTHER">Other</option>
@@ -69,11 +70,7 @@ export function ServerForm({ defaultValues, onSubmit, submitLabel }: ServerFormP
       </div>
       <div>
         <Label htmlFor="environment">Environment</Label>
-        <select
-          id="environment"
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-          {...register('environment')}
-        >
+        <select id="environment" className={selectClassName} {...register('environment')}>
           <option value="PRODUCTION">Production</option>
           <option value="UAT">UAT</option>
           <option value="DEVELOPMENT">Development</option>
@@ -83,12 +80,12 @@ export function ServerForm({ defaultValues, onSubmit, submitLabel }: ServerFormP
       <div>
         <Label htmlFor="application">Application</Label>
         <Input id="application" {...register('application')} />
-        {errors.application && <p className="text-sm text-red-600">{errors.application.message}</p>}
+        {errors.application && <p className={errorClassName}>{errors.application.message}</p>}
       </div>
       <div>
         <Label htmlFor="owner">Owner</Label>
         <Input id="owner" {...register('owner')} />
-        {errors.owner && <p className="text-sm text-red-600">{errors.owner.message}</p>}
+        {errors.owner && <p className={errorClassName}>{errors.owner.message}</p>}
       </div>
       <div>
         <Label htmlFor="location">Location</Label>
@@ -96,18 +93,18 @@ export function ServerForm({ defaultValues, onSubmit, submitLabel }: ServerFormP
       </div>
       <div>
         <Label htmlFor="username">Username</Label>
-        <Input id="username" {...register('username')} />
-        {errors.username && <p className="text-sm text-red-600">{errors.username.message}</p>}
+        <Input id="username" className="font-mono" {...register('username')} />
+        {errors.username && <p className={errorClassName}>{errors.username.message}</p>}
       </div>
       <div>
         <Label htmlFor="sshPort">SSH Port</Label>
-        <Input id="sshPort" type="number" {...register('sshPort')} />
+        <Input id="sshPort" type="number" className="font-mono" {...register('sshPort')} />
       </div>
       <div>
         <Label htmlFor="description">Description</Label>
         <textarea
           id="description"
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className={textareaClassName}
           rows={3}
           {...register('description')}
         />

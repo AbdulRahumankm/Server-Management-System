@@ -13,10 +13,10 @@ export function DialogContent({
 }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>) {
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Overlay className="fixed inset-0 bg-black/40" />
+      <DialogPrimitive.Overlay className="fixed inset-0 bg-slate-950/60" />
       <DialogPrimitive.Content
         className={cn(
-          'fixed left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white p-6 shadow-lg',
+          'fixed left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-md border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900',
           className,
         )}
         {...props}
@@ -29,7 +29,10 @@ export const DialogTitle = ({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>) => (
-  <DialogPrimitive.Title className={cn('text-lg font-semibold', className)} {...props} />
+  <DialogPrimitive.Title
+    className={cn('text-lg font-semibold text-slate-900 dark:text-slate-50', className)}
+    {...props}
+  />
 );
 
 export function DialogFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {

@@ -13,6 +13,9 @@ interface DynamicRecordFormProps {
   submitLabel: string;
 }
 
+const controlClassName =
+  'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50';
+
 export function DynamicRecordForm({
   fields,
   defaultValues,
@@ -44,7 +47,7 @@ export function DynamicRecordForm({
           {field.fieldType === 'TEXTAREA' && (
             <textarea
               id={field.fieldName}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className={controlClassName}
               rows={3}
               required={field.required}
               value={(values[field.fieldName] as string) ?? ''}
@@ -62,7 +65,7 @@ export function DynamicRecordForm({
           {field.fieldType === 'SELECT' && (
             <select
               id={field.fieldName}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className={controlClassName}
               required={field.required}
               value={(values[field.fieldName] as string) ?? ''}
               onChange={(e) => setValue(field.fieldName, e.target.value)}

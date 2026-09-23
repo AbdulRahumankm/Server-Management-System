@@ -73,23 +73,29 @@ function AddUserDialog({ roles }: { roles: AppRole[] }) {
           <div>
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" {...register('email')} />
-            {errors.email && <p className="text-sm text-red-600">{errors.email.message}</p>}
+            {errors.email && (
+              <p className="text-sm text-red-600 dark:text-red-400">{errors.email.message}</p>
+            )}
           </div>
           <div>
             <Label htmlFor="name">Name</Label>
             <Input id="name" {...register('name')} />
-            {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
+            {errors.name && (
+              <p className="text-sm text-red-600 dark:text-red-400">{errors.name.message}</p>
+            )}
           </div>
           <div>
             <Label htmlFor="password">Initial Password</Label>
             <Input id="password" type="password" {...register('password')} />
-            {errors.password && <p className="text-sm text-red-600">{errors.password.message}</p>}
+            {errors.password && (
+              <p className="text-sm text-red-600 dark:text-red-400">{errors.password.message}</p>
+            )}
           </div>
           <div>
             <Label htmlFor="roleId">Role</Label>
             <select
               id="roleId"
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50"
               {...register('roleId')}
             >
               <option value="">Select a role</option>
@@ -99,7 +105,9 @@ function AddUserDialog({ roles }: { roles: AppRole[] }) {
                 </option>
               ))}
             </select>
-            {errors.roleId && <p className="text-sm text-red-600">{errors.roleId.message}</p>}
+            {errors.roleId && (
+              <p className="text-sm text-red-600 dark:text-red-400">{errors.roleId.message}</p>
+            )}
           </div>
           <DialogFooter>
             <DialogClose asChild>
@@ -139,7 +147,9 @@ function EditRoleDialog({ user, roles }: { user: AppUser; roles: AppRole[] }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button className="text-sm text-slate-700 underline">Edit Role</button>
+        <button className="text-sm text-slate-600 underline hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">
+          Edit Role
+        </button>
       </DialogTrigger>
       <DialogContent>
         <DialogTitle>Change role for {user.email}</DialogTitle>
@@ -147,7 +157,7 @@ function EditRoleDialog({ user, roles }: { user: AppUser; roles: AppRole[] }) {
           <Label htmlFor={`role-${user.id}`}>Role</Label>
           <select
             id={`role-${user.id}`}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50"
             value={roleId}
             onChange={(e) => setRoleId(e.target.value)}
           >
@@ -205,7 +215,7 @@ export default function UsersPage() {
   return (
     <main className="p-8">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Users</h1>
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-50">Users</h1>
         {roles && <AddUserDialog roles={roles} />}
       </div>
 
@@ -225,11 +235,13 @@ export default function UsersPage() {
                 <TableCell>{user.name}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.role.name}</TableCell>
-                <TableCell className="flex gap-2">
+                <TableCell className="flex gap-3">
                   {roles && <EditRoleDialog user={user} roles={roles} />}
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <button className="text-sm text-red-600 underline">Delete</button>
+                      <button className="text-sm text-red-600 underline hover:text-red-500 dark:text-red-400">
+                        Delete
+                      </button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogTitle>Delete {user.email}?</AlertDialogTitle>

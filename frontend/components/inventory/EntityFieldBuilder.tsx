@@ -37,7 +37,7 @@ export function EntityFieldBuilder({ fields, onChange }: EntityFieldBuilderProps
       {fields.map((field, index) => (
         <div
           key={index}
-          className="flex flex-wrap items-end gap-2 rounded-md border border-slate-200 p-2"
+          className="flex flex-wrap items-end gap-2 rounded-md border border-slate-200 p-2 dark:border-slate-700"
         >
           <div>
             <Label htmlFor={`field-name-${index}`}>Field Name</Label>
@@ -51,7 +51,7 @@ export function EntityFieldBuilder({ fields, onChange }: EntityFieldBuilderProps
             <Label htmlFor={`field-type-${index}`}>Type</Label>
             <select
               id={`field-type-${index}`}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50"
               value={field.fieldType}
               onChange={(e) => updateField(index, { fieldType: e.target.value as FieldType })}
             >
@@ -72,7 +72,7 @@ export function EntityFieldBuilder({ fields, onChange }: EntityFieldBuilderProps
               />
             </div>
           )}
-          <label className="flex items-center gap-1 text-sm">
+          <label className="flex items-center gap-1 text-sm text-slate-700 dark:text-slate-300">
             <input
               type="checkbox"
               checked={field.required}
@@ -82,7 +82,7 @@ export function EntityFieldBuilder({ fields, onChange }: EntityFieldBuilderProps
           </label>
           <button
             type="button"
-            className="text-sm text-red-600 underline"
+            className="text-sm text-red-600 underline hover:text-red-500 dark:text-red-400"
             onClick={() => removeField(index)}
           >
             Remove
