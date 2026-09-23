@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum FieldType {
+  TEXT
+  NUMBER
+  BOOLEAN
+  DATE
+  SELECT
+  TEXTAREA
+  SSH_KEY
+  PASSWORD
+}
+
+model InventoryEntity {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  fields  InventoryField[]
+  records InventoryRecord[]
+}
+
+model InventoryField {
+  id           String          @id @default(uuid())
+  entityId     String
+  entity       InventoryEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  fieldName    String
+  fieldType    FieldType
+  required     Boolean         @default(false)
+  options      Json?
+  displayOrder Int             @default(0)
+  createdAt    DateTime        @default(now())
+
+  @@unique([entityId, fieldName])
+  @@index([entityId])
+}
+
+model InventoryRecord {
+  id          String          @id @default(uuid())
+  entityId    String
+  entity      InventoryEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  data        Json
+  createdById String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([entityId])
+}
