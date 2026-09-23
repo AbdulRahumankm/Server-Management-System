@@ -40,6 +40,11 @@ enum AuthProvider {
   OIDC
 }
 
+enum KeyFormat {
+  PEM
+  PPK
+}
+
 model User {
   id           String       @id @default(uuid())
   email        String       @unique
@@ -102,6 +107,9 @@ model Server {
   status        ServerStatus    @default(ACTIVE)
   assignedKeyId String?         @unique
   assignedKey   SSHKey?         @relation(fields: [assignedKeyId], references: [id])
+  windowsPasswordCiphertext String?
+  windowsPasswordIv         String?
+  windowsPasswordAuthTag    String?
   createdById   String
   createdBy     User            @relation("ServerCreatedBy", fields: [createdById], references: [id])
   createdAt     DateTime        @default(now())
@@ -117,6 +125,7 @@ model SSHKey {
   id             String    @id @default(uuid())
   name           String    @unique
   keyType        String
+  keyFormat      KeyFormat @default(PEM)
   description    String?
   ownerId        String
   owner          User      @relation(fields: [ownerId], references: [id])

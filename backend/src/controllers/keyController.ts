@@ -8,12 +8,11 @@ import {
   decryptAndRecordAccess,
   deleteKey,
   assignKeyToServer,
+  looksLikeKeyFile,
   KeyNotFoundError,
   DuplicateKeyNameError,
 } from '../services/keyService';
 import { logAudit, AUDIT_ACTIONS, requestContext } from '../services/auditService';
-
-const PRIVATE_KEY_MARKER = '-----BEGIN';
 
 export async function listKeysHandler(req: Request, res: Response): Promise<void> {
   const search = typeof req.query.search === 'string' ? req.query.search : undefined;
@@ -39,8 +38,10 @@ export async function uploadKeyHandler(req: Request, res: Response): Promise<voi
     res.status(400).json({ error: 'A key file is required' });
     return;
   }
-  if (req.file.buffer.subarray(0, PRIVATE_KEY_MARKER.length).toString('utf8') !== PRIVATE_KEY_MARKER) {
-    res.status(400).json({ error: 'File does not look like a PEM-encoded private key' });
+  if (!looksLikeKeyFile(req.file.buffer, parsed.data.keyFormat)) {
+    res.status(400).json({
+      error: `File does not look like a ${parsed.data.keyFormat}-encoded private key`,
+    });
     return;
   }
 
@@ -48,6 +49,7 @@ export async function uploadKeyHandler(req: Request, res: Response): Promise<voi
     const key = await uploadKey({
       name: parsed.data.name,
       keyType: parsed.data.keyType,
+      keyFormat: parsed.data.keyFormat,
       description: parsed.data.description,
       ownerId: req.user!.id,
       fileBuffer: req.file.buffer,

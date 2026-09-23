@@ -34,5 +34,10 @@ export const updateRecordSchema = z.object({
   data: z.record(z.string(), z.unknown()),
 });
 
+export const bulkCreateRecordsSchema = z.object({
+  records: z.array(z.record(z.string(), z.unknown())).min(1).max(1000),
+});
+
 export type CreateEntityInput = z.infer<typeof createEntitySchema>;
 export type UpdateEntityInput = z.infer<typeof updateEntitySchema>;
+export type BulkCreateRecordsInput = z.infer<typeof bulkCreateRecordsSchema>;

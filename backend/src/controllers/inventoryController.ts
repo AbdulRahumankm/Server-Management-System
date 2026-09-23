@@ -4,6 +4,7 @@ import {
   updateEntitySchema,
   createRecordSchema,
   updateRecordSchema,
+  bulkCreateRecordsSchema,
 } from '../schemas/inventorySchemas';
 import {
   listEntities,
@@ -15,6 +16,7 @@ import {
   createRecord,
   updateRecord,
   deleteRecord,
+  bulkCreateRecords,
   InventoryEntityNotFoundError,
   DuplicateEntityNameError,
   InventoryRecordNotFoundError,
@@ -134,6 +136,32 @@ export async function createRecordHandler(req: Request, res: Response): Promise<
     }
     if (err instanceof InvalidRecordDataError) {
       res.status(400).json({ error: 'Invalid record data', details: err.issues });
+      return;
+    }
+    throw err;
+  }
+}
+
+export async function bulkCreateRecordsHandler(req: Request, res: Response): Promise<void> {
+  const parsed = bulkCreateRecordsSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Invalid request', details: parsed.error.flatten() });
+    return;
+  }
+  try {
+    const result = await bulkCreateRecords(req.params.id, parsed.data.records, req.user!.id);
+    await logAudit({
+      userId: req.user!.id,
+      action: AUDIT_ACTIONS.INVENTORY_RECORDS_IMPORTED,
+      resourceType: 'InventoryEntity',
+      resourceId: req.params.id,
+      metadata: { insertedCount: result.insertedCount, errorCount: result.errors.length },
+      ...requestContext(req),
+    });
+    res.status(207).json(result);
+  } catch (err) {
+    if (err instanceof InventoryEntityNotFoundError) {
+      res.status(404).json({ error: 'Inventory entity not found' });
       return;
     }
     throw err;

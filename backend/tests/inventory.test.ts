@@ -131,4 +131,50 @@ describe('dynamic inventory', () => {
       .query({ action: 'INVENTORY_RECORD_CREATED' });
     expect(recordLogs.body.data.length).toBeGreaterThan(0);
   });
+
+  it('rejects a non-operator bulk-importing records', async () => {
+    const res = await viewerAgent
+      .post(`/api/inventory/entities/${entityId}/records/bulk`)
+      .send({ records: [{ hostname: 'sw-10', status: 'Active' }] });
+    expect(res.status).toBe(403);
+  });
+
+  it('bulk-imports valid rows and reports per-row errors for invalid ones', async () => {
+    const res = await operatorAgent
+      .post(`/api/inventory/entities/${entityId}/records/bulk`)
+      .send({
+        records: [
+          { hostname: 'sw-20', status: 'Active', portCount: 24 },
+          { hostname: 'sw-21' },
+          { hostname: 'sw-22', status: 'NotAnOption' },
+          { hostname: 'sw-23', status: 'Retired' },
+        ],
+      });
+
+    expect(res.status).toBe(207);
+    expect(res.body.insertedCount).toBe(2);
+    expect(res.body.errors).toHaveLength(2);
+    expect(res.body.errors[0].row).toBe(2);
+    expect(res.body.errors[1].row).toBe(3);
+
+    const listRes = await operatorAgent.get(`/api/inventory/entities/${entityId}/records`);
+    const hostnames = listRes.body.data.map((r: { data: { hostname: string } }) => r.data.hostname);
+    expect(hostnames).toEqual(expect.arrayContaining(['sw-20', 'sw-23']));
+    expect(hostnames).not.toContain('sw-21');
+    expect(hostnames).not.toContain('sw-22');
+  });
+
+  it('rejects a bulk import for a non-existent entity', async () => {
+    const res = await operatorAgent
+      .post('/api/inventory/entities/00000000-0000-0000-0000-000000000000/records/bulk')
+      .send({ records: [{ hostname: 'sw-30', status: 'Active' }] });
+    expect(res.status).toBe(404);
+  });
+
+  it('rejects an empty records array', async () => {
+    const res = await operatorAgent
+      .post(`/api/inventory/entities/${entityId}/records/bulk`)
+      .send({ records: [] });
+    expect(res.status).toBe(400);
+  });
 });

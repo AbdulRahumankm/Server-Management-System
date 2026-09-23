@@ -150,6 +150,47 @@ export async function updateRecord(id: string, data: Record<string, unknown>) {
   });
 }
 
+export interface BulkCreateRecordsResult {
+  insertedCount: number;
+  errors: { row: number; issues: string[] }[];
+}
+
+export async function bulkCreateRecords(
+  entityId: string,
+  records: Record<string, unknown>[],
+  createdById: string,
+): Promise<BulkCreateRecordsResult> {
+  const entity = await prisma.inventoryEntity.findUnique({
+    where: { id: entityId },
+    include: { fields: true },
+  });
+  if (!entity) throw new InventoryEntityNotFoundError();
+
+  const schema = buildRecordDataSchema(entity.fields);
+  const validRows: Prisma.InputJsonValue[] = [];
+  const errors: { row: number; issues: string[] }[] = [];
+
+  records.forEach((record, index) => {
+    const parsed = schema.safeParse(record);
+    if (parsed.success) {
+      validRows.push(parsed.data as Prisma.InputJsonValue);
+    } else {
+      errors.push({
+        row: index + 1,
+        issues: parsed.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`),
+      });
+    }
+  });
+
+  if (validRows.length > 0) {
+    await prisma.inventoryRecord.createMany({
+      data: validRows.map((data) => ({ entityId, data, createdById })),
+    });
+  }
+
+  return { insertedCount: validRows.length, errors };
+}
+
 export async function deleteRecord(id: string) {
   try {
     return await prisma.inventoryRecord.delete({ where: { id } });

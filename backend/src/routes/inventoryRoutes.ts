@@ -9,6 +9,7 @@ import {
   deleteEntityHandler,
   listRecordsHandler,
   createRecordHandler,
+  bulkCreateRecordsHandler,
   updateRecordHandler,
   deleteRecordHandler,
 } from '../controllers/inventoryController';
@@ -26,6 +27,11 @@ inventoryRouter.post(
   '/entities/:id/records',
   requirePermission('inventory:manage'),
   createRecordHandler,
+);
+inventoryRouter.post(
+  '/entities/:id/records/bulk',
+  requirePermission('inventory:manage'),
+  bulkCreateRecordsHandler,
 );
 inventoryRouter.put('/records/:id', requirePermission('inventory:manage'), updateRecordHandler);
 inventoryRouter.delete('/records/:id', requirePermission('inventory:manage'), deleteRecordHandler);

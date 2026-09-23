@@ -1,8 +1,11 @@
 import { z } from 'zod';
 
+export const keyFormatEnum = z.enum(['PEM', 'PPK']);
+
 export const uploadKeyMetadataSchema = z.object({
   name: z.string().min(1).max(255),
   keyType: z.enum(['rsa', 'ed25519', 'ecdsa', 'dsa']),
+  keyFormat: keyFormatEnum.default('PEM'),
   description: z.string().max(2000).optional(),
 });
 

@@ -135,7 +135,7 @@ describe('keys', () => {
       .post(`/api/keys/${keyId}/assign`)
       .send({ serverId: server.id });
     expect(operatorAttempt.status).toBe(200);
-    expect(operatorAttempt.body.assignedKeyId).toBe(keyId);
+    expect(operatorAttempt.body.assignedKey.id).toBe(keyId);
   });
 
   it('lets an admin delete a key', async () => {

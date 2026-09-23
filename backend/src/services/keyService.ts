@@ -2,16 +2,28 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { LocalFilesystemStorageProvider } from '../storage/LocalFilesystemStorageProvider';
 import type { StorageProvider } from '../storage/StorageProvider';
+import { SERVER_SELECT } from '../lib/serverSelect';
 
 const storage: StorageProvider = new LocalFilesystemStorageProvider();
 
 export class KeyNotFoundError extends Error {}
 export class DuplicateKeyNameError extends Error {}
 
+const FORMAT_MARKERS: Record<'PEM' | 'PPK', string> = {
+  PEM: '-----BEGIN',
+  PPK: 'PuTTY-User-Key-File-',
+};
+
+export function looksLikeKeyFile(buffer: Buffer, format: 'PEM' | 'PPK'): boolean {
+  const marker = FORMAT_MARKERS[format];
+  return buffer.subarray(0, marker.length).toString('utf8') === marker;
+}
+
 const KEY_METADATA_SELECT = {
   id: true,
   name: true,
   keyType: true,
+  keyFormat: true,
   description: true,
   ownerId: true,
   owner: { select: { id: true, name: true, email: true } },
@@ -37,6 +49,7 @@ export async function getKeyMetadata(id: string) {
 export async function uploadKey(input: {
   name: string;
   keyType: string;
+  keyFormat: 'PEM' | 'PPK';
   description?: string;
   ownerId: string;
   fileBuffer: Buffer;
@@ -47,6 +60,7 @@ export async function uploadKey(input: {
       data: {
         name: input.name,
         keyType: input.keyType,
+        keyFormat: input.keyFormat,
         description: input.description,
         ownerId: input.ownerId,
         storageRef,
@@ -92,5 +106,9 @@ export async function deleteKey(id: string) {
 export async function assignKeyToServer(keyId: string, serverId: string) {
   const key = await prisma.sSHKey.findUnique({ where: { id: keyId } });
   if (!key) throw new KeyNotFoundError();
-  return prisma.server.update({ where: { id: serverId }, data: { assignedKeyId: keyId } });
+  return prisma.server.update({
+    where: { id: serverId },
+    data: { assignedKeyId: keyId },
+    select: SERVER_SELECT,
+  });
 }

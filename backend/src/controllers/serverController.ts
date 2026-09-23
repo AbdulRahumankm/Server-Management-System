@@ -10,8 +10,10 @@ import {
   createServer,
   updateServer,
   deleteServer,
+  getServerCredential,
   ServerNotFoundError,
   DuplicateHostnameError,
+  InvalidCredentialError,
 } from '../services/serverService';
 import { logAudit, AUDIT_ACTIONS, requestContext } from '../services/auditService';
 
@@ -40,7 +42,7 @@ export async function createServerHandler(req: Request, res: Response): Promise<
     return;
   }
   try {
-    const server = await createServer(parsed.data, req.user!.id);
+    const server = await createServer(parsed.data, req.user!.id, req.file?.buffer);
     await logAudit({
       userId: req.user!.id,
       action: AUDIT_ACTIONS.SERVER_CREATED,
@@ -53,6 +55,10 @@ export async function createServerHandler(req: Request, res: Response): Promise<
   } catch (err) {
     if (err instanceof DuplicateHostnameError) {
       res.status(409).json({ error: 'A server with this hostname already exists' });
+      return;
+    }
+    if (err instanceof InvalidCredentialError) {
+      res.status(400).json({ error: err.message });
       return;
     }
     throw err;
@@ -83,6 +89,27 @@ export async function updateServerHandler(req: Request, res: Response): Promise<
     }
     if (err instanceof DuplicateHostnameError) {
       res.status(409).json({ error: 'A server with this hostname already exists' });
+      return;
+    }
+    throw err;
+  }
+}
+
+export async function getServerCredentialHandler(req: Request, res: Response): Promise<void> {
+  try {
+    const credential = await getServerCredential(req.params.id);
+    await logAudit({
+      userId: req.user!.id,
+      action: AUDIT_ACTIONS.CREDENTIAL_VIEWED,
+      resourceType: 'Server',
+      resourceId: req.params.id,
+      metadata: { credentialType: credential.type },
+      ...requestContext(req),
+    });
+    res.status(200).json(credential);
+  } catch (err) {
+    if (err instanceof ServerNotFoundError) {
+      res.status(404).json({ error: 'Server not found' });
       return;
     }
     throw err;

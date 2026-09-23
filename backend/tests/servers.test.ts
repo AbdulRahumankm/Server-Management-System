@@ -39,6 +39,10 @@ const baseServerInput = {
   sshPort: 22,
 };
 
+const FAKE_PEM_KEY = Buffer.from(
+  '-----BEGIN OPENSSH PRIVATE KEY-----\nnotarealkey\n-----END OPENSSH PRIVATE KEY-----\n',
+);
+
 describe('servers', () => {
   let adminAgent: ReturnType<typeof request.agent>;
   let operatorAgent: ReturnType<typeof request.agent>;
@@ -56,6 +60,7 @@ describe('servers', () => {
 
   afterAll(async () => {
     await prisma.server.deleteMany({});
+    await prisma.sSHKey.deleteMany({});
     await prisma.user.deleteMany({
       where: { email: { in: ['operator@example.com', 'viewer@example.com'] } },
     });
@@ -135,5 +140,89 @@ describe('servers', () => {
     expect(res.body).toHaveProperty('total');
     expect(res.body.page).toBe(1);
     expect(res.body.pageSize).toBe(5);
+  });
+
+  it('never leaks SSH key material, password hashes, or windows password ciphertext in server responses', async () => {
+    const listRes = await adminAgent.get('/api/servers');
+    const bodyText = JSON.stringify(listRes.body);
+    expect(bodyText).not.toMatch(/passwordHash/i);
+    expect(bodyText).not.toMatch(/storageRef/i);
+    expect(bodyText).not.toMatch(/windowsPassword/i);
+    expect(bodyText).not.toContain('"iv"');
+    expect(bodyText).not.toContain('"authTag"');
+  });
+
+  it('creates a Linux server with an uploaded SSH key and reveals it via the credential endpoint', async () => {
+    const createRes = await operatorAgent
+      .post('/api/servers')
+      .field('hostname', 'linux-cred-01.internal')
+      .field('ipAddress', '10.0.0.20')
+      .field('os', 'LINUX')
+      .field('environment', 'PRODUCTION')
+      .field('application', 'web')
+      .field('owner', 'Platform Team')
+      .field('username', 'deploy')
+      .field('sshPort', '22')
+      .field('credentialType', 'SSH_KEY')
+      .field('keyFormat', 'PEM')
+      .attach('credentialFile', FAKE_PEM_KEY, 'id_rsa');
+
+    expect(createRes.status).toBe(201);
+    expect(createRes.body).not.toHaveProperty('windowsPasswordCiphertext');
+    expect(JSON.stringify(createRes.body)).not.toMatch(/storageRef/i);
+    const serverId = createRes.body.id;
+
+    const forbiddenRes = await viewerAgent.get(`/api/servers/${serverId}/credential`);
+    expect(forbiddenRes.status).toBe(403);
+
+    const credentialRes = await adminAgent.get(`/api/servers/${serverId}/credential`);
+    expect(credentialRes.status).toBe(200);
+    expect(credentialRes.body.type).toBe('SSH_KEY');
+    expect(credentialRes.body.keyName).toBe('linux-cred-01.internal-key');
+  });
+
+  it('rejects an SSH_KEY credential upload whose file does not look like the declared format', async () => {
+    const res = await operatorAgent
+      .post('/api/servers')
+      .field('hostname', 'linux-cred-bad-01.internal')
+      .field('ipAddress', '10.0.0.21')
+      .field('os', 'LINUX')
+      .field('environment', 'PRODUCTION')
+      .field('application', 'web')
+      .field('owner', 'Platform Team')
+      .field('username', 'deploy')
+      .field('credentialType', 'SSH_KEY')
+      .field('keyFormat', 'PPK')
+      .attach('credentialFile', FAKE_PEM_KEY, 'id_rsa');
+
+    expect(res.status).toBe(400);
+  });
+
+  it('creates a Windows server with a password and reveals it via the credential endpoint', async () => {
+    const createRes = await operatorAgent.post('/api/servers').send({
+      hostname: 'win-cred-01.internal',
+      ipAddress: '10.0.0.30',
+      os: 'WINDOWS',
+      environment: 'PRODUCTION',
+      application: 'app',
+      owner: 'Platform Team',
+      username: 'Administrator',
+      credentialType: 'PASSWORD',
+      password: 'S3cretW1nPass!',
+    });
+
+    expect(createRes.status).toBe(201);
+    const bodyText = JSON.stringify(createRes.body);
+    expect(bodyText).not.toMatch(/windowsPassword/i);
+    expect(bodyText).not.toContain('S3cretW1nPass!');
+    const serverId = createRes.body.id;
+
+    const credentialRes = await adminAgent.get(`/api/servers/${serverId}/credential`);
+    expect(credentialRes.status).toBe(200);
+    expect(credentialRes.body).toEqual({
+      type: 'PASSWORD',
+      username: 'Administrator',
+      password: 'S3cretW1nPass!',
+    });
   });
 });
