@@ -33,6 +33,8 @@ enum FieldType {
   DATE
   SELECT
   TEXTAREA
+  SSH_KEY
+  PASSWORD
 }
 
 enum AuthProvider {
