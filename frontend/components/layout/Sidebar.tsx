@@ -4,8 +4,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
-  Server,
-  KeyRound,
   Database,
   Users,
   Shield,
@@ -24,8 +22,6 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/servers', label: 'Servers', icon: Server },
-  { href: '/keys', label: 'SSH Keys', icon: KeyRound },
   { href: '/inventory', label: 'Dynamic Inventory', icon: Database },
   { href: '/users', label: 'Users', icon: Users, permission: 'user:manage' },
   { href: '/roles', label: 'Roles', icon: Shield, permission: 'role:manage' },
