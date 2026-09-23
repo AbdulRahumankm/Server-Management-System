@@ -30,7 +30,7 @@ inventoryRouter.get('/entities', requirePermission('inventory:view'), listEntiti
 inventoryRouter.post('/entities', requirePermission('inventory:create'), createEntityHandler);
 inventoryRouter.get('/entities/:id', requirePermission('inventory:view'), getEntityHandler);
 inventoryRouter.put('/entities/:id', requirePermission('inventory:manage'), updateEntityHandler);
-inventoryRouter.delete('/entities/:id', requirePermission('inventory:manage'), deleteEntityHandler);
+inventoryRouter.delete('/entities/:id', requirePermission('inventory:delete'), deleteEntityHandler);
 inventoryRouter.get('/entities/:id/records', requirePermission('inventory:view'), listRecordsHandler);
 inventoryRouter.post(
   '/entities/:id/records',

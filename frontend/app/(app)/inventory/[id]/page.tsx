@@ -1,6 +1,7 @@
 'use client';
 
 import { use, useState } from 'react';
+import * as XLSX from 'xlsx';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -105,6 +106,20 @@ export default function InventoryEntityPage({ params }: { params: Promise<{ id: 
     queryClient.invalidateQueries({ queryKey: ['inventory-records', id] });
   }
 
+  function handleExport() {
+    if (!entity || !records) return;
+    const exportableFields = entity.fields.filter(
+      (field) => field.fieldType !== 'PASSWORD' && field.fieldType !== 'SSH_KEY',
+    );
+    const rows = records.data.map((record) =>
+      Object.fromEntries(exportableFields.map((field) => [field.fieldName, record.data[field.fieldName] ?? ''])),
+    );
+    const sheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, 'Records');
+    XLSX.writeFile(workbook, `${entity.name}.xlsx`);
+  }
+
   if (!entity) return <main className="p-8 text-slate-500">Loading...</main>;
 
   return (
@@ -112,6 +127,9 @@ export default function InventoryEntityPage({ params }: { params: Promise<{ id: 
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-slate-900">{entity.name}</h1>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExport} disabled={!records || records.data.length === 0}>
+            Export
+          </Button>
           <ImportRecordsDialog
             entityId={id}
             onImported={() => queryClient.invalidateQueries({ queryKey: ['inventory-records', id] })}
