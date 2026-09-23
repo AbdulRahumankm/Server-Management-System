@@ -15,10 +15,16 @@ export const ACCESS_COOKIE = 'access_token';
 export const REFRESH_COOKIE = 'refresh_token';
 const ACCESS_COOKIE_MAX_AGE_MS = 15 * 60 * 1000;
 
+// A cookie marked Secure is silently dropped by browsers on a plain HTTP
+// connection -- NODE_ENV=production (set by the Docker image) does not mean
+// "served over HTTPS", so it must not drive this flag. Only set Secure once
+// this is actually served behind TLS (e.g. an AWS ALB), via COOKIE_SECURE.
+const COOKIE_SECURE = process.env.COOKIE_SECURE === 'true';
+
 export function setAccessCookie(res: Response, token: string): void {
   res.cookie(ACCESS_COOKIE, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: COOKIE_SECURE,
     sameSite: 'lax',
     maxAge: ACCESS_COOKIE_MAX_AGE_MS,
   });

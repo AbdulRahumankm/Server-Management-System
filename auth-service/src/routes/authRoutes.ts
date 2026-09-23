@@ -50,7 +50,7 @@ authRouter.post('/login', loginRateLimiter, async (req: Request, res: Response) 
     setAccessCookie(res, signAccessToken(payload));
     res.cookie(REFRESH_COOKIE, signRefreshToken(payload), {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.COOKIE_SECURE === 'true',
       sameSite: 'lax',
       maxAge: REFRESH_COOKIE_MAX_AGE_MS,
     });
