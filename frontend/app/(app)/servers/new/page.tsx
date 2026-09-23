@@ -8,15 +8,26 @@ import { apiFetch } from '@/lib/apiClient';
 export default function NewServerPage() {
   const router = useRouter();
 
-  async function handleSubmit(values: ServerFormValues) {
-    const res = await apiFetch('/api/servers', {
-      method: 'POST',
-      body: JSON.stringify(values),
-    });
+  async function handleSubmit(values: ServerFormValues, credentialFile: File | null) {
+    let body: BodyInit;
+    if (credentialFile) {
+      const formData = new FormData();
+      for (const [key, value] of Object.entries(values)) {
+        if (value !== undefined && value !== null) {
+          formData.set(key, String(value));
+        }
+      }
+      formData.set('credentialFile', credentialFile);
+      body = formData;
+    } else {
+      body = JSON.stringify(values);
+    }
+
+    const res = await apiFetch('/api/servers', { method: 'POST', body });
 
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      toast.error(body.error ?? 'Failed to create server');
+      const errorBody = await res.json().catch(() => ({}));
+      toast.error(errorBody.error ?? 'Failed to create server');
       return;
     }
 

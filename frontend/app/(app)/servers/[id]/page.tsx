@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { EnvironmentLabel } from '@/components/ui/environment-label';
+import { ServerCredentialDialog } from '@/components/servers/ServerCredentialDialog';
 import { apiFetch } from '@/lib/apiClient';
+import { useCurrentUser } from '@/lib/useCurrentUser';
 import type { Server } from '@/types/server';
 
 function InfoSection({ title, children }: { title: string; children: React.ReactNode }) {
@@ -19,6 +21,8 @@ function InfoSection({ title, children }: { title: string; children: React.React
 
 export default function ServerDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const { data: currentUser } = useCurrentUser();
+  const permissions = currentUser?.permissions ?? [];
 
   const { data: server, isLoading, isError } = useQuery<Server>({
     queryKey: ['servers', id],
@@ -36,9 +40,12 @@ export default function ServerDetailsPage({ params }: { params: Promise<{ id: st
     <main className="p-8">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="font-mono text-2xl font-semibold text-slate-900">{server.hostname}</h1>
-        <Button asChild>
-          <Link href={`/servers/${server.id}/edit`}>Edit</Link>
-        </Button>
+        <div className="flex gap-2">
+          {permissions.includes('key:download') && <ServerCredentialDialog serverId={server.id} />}
+          <Button asChild>
+            <Link href={`/servers/${server.id}/edit`}>Edit</Link>
+          </Button>
+        </div>
       </div>
 
       <InfoSection title="Basic Information">

@@ -35,5 +35,42 @@ describe('ServerForm', () => {
       os: 'LINUX',
       environment: 'PRODUCTION',
     });
+    expect(onSubmit.mock.calls[0][1]).toBeNull();
+  });
+
+  it('shows an SSH credential section for Linux and switches to a Windows password section', async () => {
+    const onSubmit = vi.fn();
+    render(<ServerForm onSubmit={onSubmit} submitLabel="Create" />);
+
+    expect(screen.getByText('SSH Credential')).toBeDefined();
+    expect(screen.queryByText('Windows Credential')).toBeNull();
+
+    fireEvent.change(screen.getByLabelText('Operating System'), { target: { value: 'WINDOWS' } });
+
+    expect(await screen.findByText('Windows Credential')).toBeDefined();
+    expect(screen.queryByText('SSH Credential')).toBeNull();
+
+    fireEvent.change(screen.getByLabelText('Windows Credential'), {
+      target: { value: 'PASSWORD' },
+    });
+    expect(await screen.findByLabelText('Password')).toBeDefined();
+  });
+
+  it('shows key format and file inputs when uploading an SSH key for a Linux server', async () => {
+    const onSubmit = vi.fn();
+    render(<ServerForm onSubmit={onSubmit} submitLabel="Create" />);
+
+    fireEvent.change(screen.getByLabelText('SSH Credential'), { target: { value: 'SSH_KEY' } });
+
+    expect(await screen.findByLabelText('Key Format')).toBeDefined();
+    expect(screen.getByLabelText('Private Key File')).toBeDefined();
+  });
+
+  it('hides the credential section in edit mode', () => {
+    const onSubmit = vi.fn();
+    render(<ServerForm mode="edit" onSubmit={onSubmit} submitLabel="Save" />);
+
+    expect(screen.queryByText('SSH Credential')).toBeNull();
+    expect(screen.queryByText('Windows Credential')).toBeNull();
   });
 });

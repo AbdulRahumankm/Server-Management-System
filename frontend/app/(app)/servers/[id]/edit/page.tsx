@@ -46,6 +46,7 @@ export default function EditServerPage({ params }: { params: Promise<{ id: strin
         Edit <span className="font-mono">{server.hostname}</span>
       </h1>
       <ServerForm
+        mode="edit"
         defaultValues={{
           hostname: server.hostname,
           ipAddress: server.ipAddress,

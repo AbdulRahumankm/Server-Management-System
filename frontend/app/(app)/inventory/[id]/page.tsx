@@ -17,6 +17,7 @@ import {
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
 import { DynamicRecordForm } from '@/components/inventory/DynamicRecordForm';
+import { ImportRecordsDialog } from '@/components/inventory/ImportRecordsDialog';
 import { apiFetch } from '@/lib/apiClient';
 import type { InventoryEntity, PaginatedInventoryRecords } from '@/types/inventory';
 
@@ -77,17 +78,23 @@ export default function InventoryEntityPage({ params }: { params: Promise<{ id: 
     <main className="p-8">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-slate-900">{entity.name}</h1>
-        <Dialog open={addOpen} onOpenChange={setAddOpen}>
-          <DialogTrigger asChild>
-            <Button>Add Record</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogTitle>Add {entity.name} Record</DialogTitle>
-            <div className="mt-4">
-              <DynamicRecordForm fields={entity.fields} onSubmit={handleAddRecord} submitLabel="Add" />
-            </div>
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <ImportRecordsDialog
+            entityId={id}
+            onImported={() => queryClient.invalidateQueries({ queryKey: ['inventory-records', id] })}
+          />
+          <Dialog open={addOpen} onOpenChange={setAddOpen}>
+            <DialogTrigger asChild>
+              <Button>Add Record</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogTitle>Add {entity.name} Record</DialogTitle>
+              <div className="mt-4">
+                <DynamicRecordForm fields={entity.fields} onSubmit={handleAddRecord} submitLabel="Add" />
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {records && records.data.length === 0 && <p className="text-slate-500">No records yet.</p>}
